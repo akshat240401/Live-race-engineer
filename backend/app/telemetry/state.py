@@ -5,11 +5,12 @@ from math import hypot, isfinite
 from threading import Lock
 from time import time
 from typing import Any
+
 from app.f1.packets import ParsedPacket
 from app.telemetry.models import LiveTelemetrySnapshot, EngineerMessage, LapSummary, compound_name
 
 class LiveTelemetryState:
-    def __init__(self, history_limit: int = 600) -> None:
+    def __init__(self, history_limit: int = 9000) -> None:
         self._lock = Lock()
         self._snapshot = LiveTelemetrySnapshot()
         self._history: deque[dict[str, Any]] = deque(maxlen=history_limit)
@@ -21,6 +22,7 @@ class LiveTelemetryState:
         self._message_id = 0
         self._last_track_point: dict[str, Any] | None = None
         self._last_track_lap: int | None = None
+        self._last_history_session_time: float | None = None
 
     def reset(self) -> None:
         with self._lock:
@@ -34,6 +36,7 @@ class LiveTelemetryState:
             self._message_id = 0
             self._last_track_point = None
             self._last_track_lap = None
+            self._last_history_session_time = None
 
     def add_message(self, severity: str, category: str, title: str, message: str, evidence: dict[str, Any] | None = None) -> EngineerMessage:
         with self._lock:
@@ -141,6 +144,17 @@ class LiveTelemetryState:
 
     def _append_history_locked(self) -> None:
         s = self._snapshot
+
+        # Keep the trace useful for the full race without flooding the websocket.
+        # At 5 Hz, 9000 points is around 30 minutes of trace history.
+        last_item = self._history[-1] if self._history else None
+        last_session_time = float(last_item.get("session_time", 0.0)) if last_item else None
+        lap_changed = bool(last_item and s.lap_number != int(last_item.get("lap_number", s.lap_number)))
+        time_changed = last_session_time is None or s.session_time - last_session_time >= 0.20
+
+        if last_item and not lap_changed and not time_changed:
+            return
+
         item = {
             "t": time(),
             "session_time": s.session_time,
@@ -159,8 +173,8 @@ class LiveTelemetryState:
             "g_force_lateral": s.g_force_lateral,
             "g_force_longitudinal": s.g_force_longitudinal,
         }
-        if not self._history or item["session_time"] != self._history[-1].get("session_time"):
-            self._history.append(item)
+        self._history.append(item)
+        self._last_history_session_time = s.session_time
 
     def _append_track_point_locked(self) -> None:
         s = self._snapshot
@@ -211,7 +225,9 @@ class LiveTelemetryState:
         if self._last_packet_ts is not None:
             s.last_packet_age_s = time() - self._last_packet_ts
             s.connected = s.last_packet_age_s < 2.5
-        s.history = list(self._history)[-260:]
+        # Send the full stored trace to the frontend so the telemetry chart can be scrolled back to the start.
+        # The deque limit keeps memory/network use bounded for local gameplay.
+        s.history = list(self._history)
         s.track_points = list(self._track_points)
         s.recent_messages = list(self._messages)
         s.completed_laps = list(self._completed_laps)

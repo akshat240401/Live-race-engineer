@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { Controls } from "../components/Controls";
 import { EngineerFeed } from "../components/EngineerFeed";
 import { InputBars } from "../components/InputBars";
-import { MetricCard } from "../components/MetricCard";
 import { TelemetryChart } from "../components/TelemetryChart";
 import { TrackMap } from "../components/TrackMap";
 import { TyrePanel } from "../components/TyrePanel";
@@ -92,10 +91,33 @@ function wsLabel(status: string): string {
   return "offline";
 }
 
+function compactBool(value: boolean, on: string, off: string): string {
+  return value ? on : off;
+}
+
 async function getHealth(): Promise<Partial<ControlState>> {
   const res = await fetch(`${API}/api/health`, { cache: "no-store" });
   if (!res.ok) throw new Error("Health check failed");
   return res.json();
+}
+
+function StatusChip({ label, value, active }: { label: string; value: string; active?: boolean }) {
+  return (
+    <div className={`status-chip ${active ? "active" : "idle"}`}>
+      <span className="chip-dot" />
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function SmallStat({ label, value, tone }: { label: string; value: string | number; tone?: "good" | "warn" | "danger" }) {
+  return (
+    <div className={`small-stat ${tone || ""}`}>
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
 }
 
 export default function Home() {
@@ -169,168 +191,125 @@ export default function Home() {
       ? Math.min(100, Math.max(0, (snapshot.lap_distance_m / snapshot.track_length_m) * 100))
       : 0;
 
+  const brakeTone = snapshot.brake > 0.15 && snapshot.throttle > 0.15 ? "danger" : undefined;
+  const tyreWearMax = Math.max(...snapshot.tyre_wear_pct.map((value) => value || 0));
+  const tyreTone = tyreWearMax >= 65 ? "danger" : tyreWearMax >= 35 ? "warn" : undefined;
+
   return (
-    <main className="app-shell">
-      <aside className="sidebar">
-        <div className="brand-block no-logo">
-          <div>
+    <main className="race-shell">
+      <header className="race-topbar">
+        <div className="topbar-left">
+          <div className="brand-line">
             <h1>Live Race Engineer</h1>
-            <p>F1 UDP telemetry console</p>
+            <span>Race mode dashboard</span>
+          </div>
+
+          <div className="topbar-status">
+            <StatusChip label="UDP" value={snapshot.connected ? "LIVE" : "WAIT"} active={snapshot.connected} />
+            <StatusChip label="WS" value={wsLabel(wsStatus).toUpperCase()} active={wsStatus === "connected"} />
+            <StatusChip label="VOICE" value={controls.voice_enabled ? "ON" : "OFF"} active={controls.voice_enabled} />
+            <StatusChip label="COACH" value={controls.coaching_enabled ? "ON" : "OFF"} active={controls.coaching_enabled} />
           </div>
         </div>
 
-        <section className="sidebar-section">
-          <div className="side-label">Connection</div>
+        <div className="race-controls">
+          <Controls
+            voiceEnabled={controls.voice_enabled}
+            coachingEnabled={controls.coaching_enabled}
+            udpConnected={snapshot.connected}
+            onStateChange={(next) => setControls((current) => ({ ...current, ...next }))}
+            onReset={() => setSnapshot(emptySnapshot)}
+          />
+        </div>
+      </header>
 
-          <div className="connection-row">
-            <span className={`dot ${snapshot.connected ? "green" : "amber"}`} />
-            <div>
-              <strong>UDP</strong>
-              <p>{snapshot.connected ? "receiving" : "waiting"}</p>
+      <section className="race-content">
+        <section className="primary-column">
+          <section className="driver-strip">
+            <div className="speed-box">
+              <span>Speed</span>
+              <strong>{Math.round(snapshot.speed_kph)}</strong>
+              <small>km/h</small>
             </div>
+
+            <div className="gear-box">
+              <span>Gear</span>
+              <strong>{gearLabel(snapshot.gear)}</strong>
+              <small>{snapshot.rpm} rpm</small>
+            </div>
+
+            <SmallStat label="Lap" value={snapshot.lap_number || "--"} />
+            <SmallStat label="Current" value={msToLap(snapshot.current_lap_time_ms)} />
+            <SmallStat label="Best" value={msToLap(snapshot.best_lap_time_ms)} tone="good" />
+            <SmallStat label="Fuel" value={fixed(snapshot.fuel_remaining_laps, 2)} tone={snapshot.fuel_remaining_laps < 0 ? "danger" : undefined} />
+            <SmallStat label="ERS" value={`${Math.round(snapshot.ers_percent)}%`} tone={snapshot.ers_percent < 15 ? "warn" : undefined} />
+            <SmallStat label="Tyres" value={`${Math.round(tyreWearMax)}%`} tone={tyreTone} />
+          </section>
+
+          <div className="lap-progress compact">
+            <div className="lap-progress-bar">
+              <div style={{ width: `${trackProgress}%` }} />
+            </div>
+            <span>{Math.round(snapshot.lap_distance_m)} m</span>
           </div>
 
-          <div className="connection-row">
-            <span className={`dot ${wsStatus === "connected" ? "green" : "red"}`} />
-            <div>
-              <strong>WebSocket</strong>
-              <p>{wsLabel(wsStatus)}</p>
+          <section className="race-main-grid">
+            <div className="race-map">
+              <TrackMap snapshot={snapshot} />
             </div>
-          </div>
 
-          <div className="connection-row">
-            <span className={controls.voice_enabled ? "dot green" : "dot neutral"} />
-            <div>
-              <strong>Voice</strong>
-              <p>{controls.voice_enabled ? "enabled" : "disabled"}</p>
+            <div className="race-chart">
+              <TelemetryChart history={snapshot.history} />
             </div>
-          </div>
-
-          <div className="connection-row">
-            <span className={controls.coaching_enabled ? "dot green" : "dot neutral"} />
-            <div>
-              <strong>Coach</strong>
-              <p>{controls.coaching_enabled ? "enabled" : "disabled"}</p>
-            </div>
-          </div>
+          </section>
         </section>
 
-        <section className="sidebar-section">
-          <div className="side-label">Session</div>
-          <div className="side-stat">
-            <span>Packets</span>
-            <strong>{snapshot.packet_count}</strong>
-          </div>
-          <div className="side-stat">
-            <span>Frame</span>
-            <strong>{snapshot.frame}</strong>
-          </div>
-          <div className="side-stat">
-            <span>Format</span>
-            <strong>{snapshot.packet_format ? `F1 ${snapshot.packet_format}` : "--"}</strong>
-          </div>
-          <div className="side-stat">
-            <span>Track ID</span>
-            <strong>{snapshot.track_id ?? "--"}</strong>
-          </div>
-        </section>
-
-        <Controls
-          voiceEnabled={controls.voice_enabled}
-          coachingEnabled={controls.coaching_enabled}
-          udpConnected={snapshot.connected}
-          onStateChange={(next) => setControls((current) => ({ ...current, ...next }))}
-          onReset={() => setSnapshot(emptySnapshot)}
-        />
-
-        {controls.last_voice_error ? <div className="side-error">Voice: {controls.last_voice_error}</div> : null}
-        {controls.last_udp_error ? <div className="side-error">UDP: {controls.last_udp_error}</div> : null}
-      </aside>
-
-      <section className="workspace">
-        <header className="workspace-header">
-          <div>
-            <p className="eyebrow">Race control desk</p>
-            <h2>Driver telemetry and live coaching</h2>
-          </div>
-
-          <div className="session-pill">
-            <span className={snapshot.connected ? "live-dot on" : "live-dot"} />
-            {snapshot.connected ? "Live telemetry" : "Waiting for UDP"}
-          </div>
-        </header>
-
-        <section className="hero-strip">
-          <div className="speed-tile">
-            <span>Speed</span>
-            <strong>{Math.round(snapshot.speed_kph)}</strong>
-            <small>km/h</small>
-          </div>
-
-          <div className="gear-tile">
-            <span>Gear</span>
-            <strong>{gearLabel(snapshot.gear)}</strong>
-            <small>{snapshot.rpm} rpm</small>
-          </div>
-
-          <MetricCard label="Lap" value={snapshot.lap_number || "--"} sub={`Sector ${snapshot.sector}`} />
-          <MetricCard label="Current" value={msToLap(snapshot.current_lap_time_ms)} sub="lap time" />
-          <MetricCard label="Best" value={msToLap(snapshot.best_lap_time_ms)} sub="personal best" />
-          <MetricCard label="Fuel" value={fixed(snapshot.fuel_remaining_laps, 2)} sub="laps delta" />
-          <MetricCard label="ERS" value={`${Math.round(snapshot.ers_percent)}%`} sub={`mode ${snapshot.ers_deploy_mode}`} />
-        </section>
-
-        <section className="lap-progress">
-          <div className="lap-progress-head">
-            <span>Lap distance</span>
-            <strong>{Math.round(snapshot.lap_distance_m)} m</strong>
-          </div>
-          <div className="lap-progress-bar">
-            <div style={{ width: `${trackProgress}%` }} />
-          </div>
-        </section>
-
-        <section className="main-grid">
-          <div className="left-stack">
-            <TelemetryChart history={snapshot.history} />
-
-            <div className="lower-grid">
-              <InputBars throttle={snapshot.throttle} brake={snapshot.brake} steer={snapshot.steer} ers={snapshot.ers_percent} />
-              <TyrePanel
-                temps={snapshot.tyre_surface_temps_c}
-                wear={snapshot.tyre_wear_pct}
-                compound={snapshot.tyre_compound}
-                age={snapshot.tyre_age_laps}
-              />
-            </div>
-
-            <div className="panel car-status-panel">
-              <div className="panel-heading">
-                <h3>Car status</h3>
-                <span className={snapshot.lap_invalid ? "state danger" : "state good"}>
-                  {snapshot.lap_invalid ? "invalid lap" : "lap valid"}
-                </span>
-              </div>
-
-              <div className="car-grid">
-                <div><span>DRS</span><strong>{snapshot.drs ? "open" : snapshot.drs_allowed ? "available" : "closed"}</strong></div>
-                <div><span>DRS range</span><strong>{snapshot.drs_activation_distance_m} m</strong></div>
-                <div><span>Brake bias</span><strong>{snapshot.front_brake_bias}%</strong></div>
-                <div><span>ABS</span><strong>{snapshot.abs_enabled ? "on" : "off"}</strong></div>
-                <div><span>TC</span><strong>{snapshot.traction_control}</strong></div>
-                <div><span>Warnings</span><strong>{snapshot.warnings}</strong></div>
-                <div><span>Penalties</span><strong>{snapshot.penalties_s}s</strong></div>
-                <div><span>Long G</span><strong>{fixed(snapshot.g_force_longitudinal, 2)}</strong></div>
-                <div><span>Lat G</span><strong>{fixed(snapshot.g_force_lateral, 2)}</strong></div>
-              </div>
-            </div>
-          </div>
-
-          <aside className="right-stack">
+        <aside className="side-column">
+          <div className="race-radio">
             <EngineerFeed messages={snapshot.recent_messages} />
-            <TrackMap snapshot={snapshot} />
-          </aside>
-        </section>
+          </div>
+
+          <div className="race-inputs">
+            <InputBars throttle={snapshot.throttle} brake={snapshot.brake} steer={snapshot.steer} ers={snapshot.ers_percent} />
+          </div>
+
+          <div className="race-tyres">
+            <TyrePanel
+              temps={snapshot.tyre_surface_temps_c}
+              wear={snapshot.tyre_wear_pct}
+              compound={snapshot.tyre_compound}
+              age={snapshot.tyre_age_laps}
+            />
+          </div>
+
+          <div className="panel compact-status-panel">
+            <div className="panel-heading">
+              <h3>Car status</h3>
+              <span className={snapshot.lap_invalid ? "state danger" : "state good"}>
+                {snapshot.lap_invalid ? "invalid" : "valid"}
+              </span>
+            </div>
+
+            <div className="compact-status-grid">
+              <SmallStat label="DRS" value={snapshot.drs ? "open" : compactBool(snapshot.drs_allowed, "ready", "closed")} />
+              <SmallStat label="Bias" value={`${snapshot.front_brake_bias}%`} />
+              <SmallStat label="ABS" value={snapshot.abs_enabled ? "on" : "off"} />
+              <SmallStat label="TC" value={snapshot.traction_control} />
+              <SmallStat label="Warn" value={snapshot.warnings} tone={snapshot.warnings > 0 ? "warn" : undefined} />
+              <SmallStat label="Pen" value={`${snapshot.penalties_s}s`} tone={snapshot.penalties_s > 0 ? "danger" : undefined} />
+              <SmallStat label="Long G" value={fixed(snapshot.g_force_longitudinal, 2)} />
+              <SmallStat label="Lat G" value={fixed(snapshot.g_force_lateral, 2)} />
+              <SmallStat label="Overlap" value={snapshot.brake > 0.15 && snapshot.throttle > 0.15 ? "yes" : "no"} tone={brakeTone} />
+            </div>
+          </div>
+
+          {(controls.last_voice_error || controls.last_udp_error) && (
+            <div className="side-error compact-error">
+              {controls.last_voice_error ? <span>Voice: {controls.last_voice_error}</span> : null}
+              {controls.last_udp_error ? <span>UDP: {controls.last_udp_error}</span> : null}
+            </div>
+          )}
+        </aside>
       </section>
     </main>
   );
