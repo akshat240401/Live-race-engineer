@@ -1,14 +1,10 @@
 from __future__ import annotations
-
 from contextlib import asynccontextmanager
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
 from app.api.routes import router
 from app.core.config import get_settings
 from app.core.runtime import RaceEngineerRuntime
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -20,7 +16,6 @@ async def lifespan(app: FastAPI):
         yield
     finally:
         runtime.stop()
-
 
 settings = get_settings()
 app = FastAPI(title=settings.app_name, lifespan=lifespan)

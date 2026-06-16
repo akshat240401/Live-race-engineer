@@ -1,6 +1,5 @@
 from enum import IntEnum
 
-
 class PacketId(IntEnum):
     MOTION = 0
     SESSION = 1
@@ -18,8 +17,7 @@ class PacketId(IntEnum):
     MOTION_EX = 13
     TIME_TRIAL = 14
     LAP_POSITIONS = 15
-    CAR_TELEMETRY_2 = 16  # 2026 Season Pack
-
+    CAR_TELEMETRY_2 = 16
 
 PACKET_NAMES = {
     PacketId.MOTION: "motion",

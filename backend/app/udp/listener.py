@@ -4,9 +4,7 @@ import socket
 from threading import Thread, Event
 from time import sleep
 from typing import Callable
-
 from app.f1.packets import parse_packet, PacketParseError, ParsedPacket
-
 
 class UDPListener:
     def __init__(self, host: str, port: int, on_packet: Callable[[ParsedPacket], None]) -> None:

@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import Any
 import struct
@@ -30,11 +29,9 @@ MOTION_2026_SIZE = struct.calcsize(MOTION_2026_FMT)
 SESSION_PREFIX_FMT = "<BbbBHBbBHH"
 SESSION_PREFIX_SIZE = struct.calcsize(SESSION_PREFIX_FMT)
 
-
 def max_cars_for_format(packet_format: int) -> int:
-    # F1 25 spec uses 22 cars; 2026 Season Pack spec uses 24.
+    # F1 25 spec uses 22 cars and 2026 Season Pack spec uses 24.
     return 24 if packet_format >= 2026 else 22
-
 
 @dataclass(slots=True)
 class PacketHeader:
@@ -58,7 +55,6 @@ class PacketHeader:
         except ValueError:
             return f"unknown_{self.packet_id}"
 
-
 @dataclass(slots=True)
 class ParsedPacket:
     header: PacketHeader
@@ -66,28 +62,23 @@ class ParsedPacket:
     player: dict[str, Any]
     raw_size: int
 
-
 class PacketParseError(ValueError):
     pass
-
 
 def _require_size(data: bytes, minimum: int, packet_name: str) -> None:
     if len(data) < minimum:
         raise PacketParseError(f"{packet_name}: expected at least {minimum} bytes, got {len(data)}")
-
 
 def parse_header(data: bytes) -> PacketHeader:
     _require_size(data, HEADER_SIZE, "header")
     values = struct.unpack_from(HEADER_FMT, data, 0)
     return PacketHeader(*values)
 
-
 def _player_index(header: PacketHeader) -> int:
     cars = max_cars_for_format(header.packet_format)
     if 0 <= header.player_car_index < cars:
         return header.player_car_index
     return 0
-
 
 def parse_packet(data: bytes) -> ParsedPacket:
     header = parse_header(data)
@@ -107,11 +98,9 @@ def parse_packet(data: bytes) -> ParsedPacket:
     elif header.packet_id == PacketId.SESSION:
         player = parse_session(data, header)
     else:
-        # Not used by the MVP dashboard; still return header info so packet counters work.
         player = {}
 
     return ParsedPacket(header=header, kind=kind, player=player, raw_size=len(data))
-
 
 def parse_car_telemetry(data: bytes, header: PacketHeader) -> dict[str, Any]:
     cars = max_cars_for_format(header.packet_format)
@@ -139,7 +128,6 @@ def parse_car_telemetry(data: bytes, header: PacketHeader) -> dict[str, Any]:
         "tyre_pressures_psi": [float(x) for x in values[23:27]],
         "surface_type": [int(x) for x in values[27:31]],
     }
-
 
 def parse_lap_data(data: bytes, header: PacketHeader) -> dict[str, Any]:
     cars = max_cars_for_format(header.packet_format)
@@ -185,7 +173,6 @@ def parse_lap_data(data: bytes, header: PacketHeader) -> dict[str, Any]:
         "speed_trap_fastest_lap": int(v[32]),
     }
 
-
 def parse_car_status(data: bytes, header: PacketHeader) -> dict[str, Any]:
     cars = max_cars_for_format(header.packet_format)
     needed = HEADER_SIZE + cars * CAR_STATUS_SIZE
@@ -221,7 +208,6 @@ def parse_car_status(data: bytes, header: PacketHeader) -> dict[str, Any]:
         "ers_deployed_this_lap_j": float(v[23]),
         "network_paused": bool(v[24]),
     }
-
 
 def parse_car_damage(data: bytes, header: PacketHeader) -> dict[str, Any]:
     cars = max_cars_for_format(header.packet_format)
@@ -259,7 +245,6 @@ def parse_car_damage(data: bytes, header: PacketHeader) -> dict[str, Any]:
         "engine_seized": bool(tail[17]),
     }
 
-
 def parse_motion(data: bytes, header: PacketHeader) -> dict[str, Any]:
     idx = _player_index(header)
     if header.packet_format >= 2026:
@@ -294,7 +279,6 @@ def parse_motion(data: bytes, header: PacketHeader) -> dict[str, Any]:
         "pitch": float(v[16]),
         "roll": float(v[17]),
     }
-
 
 def parse_session(data: bytes, header: PacketHeader) -> dict[str, Any]:
     offset = HEADER_SIZE
