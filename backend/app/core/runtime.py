@@ -8,7 +8,6 @@ from app.f1.packets import ParsedPacket
 from app.telemetry.state import LiveTelemetryState
 from app.udp.listener import UDPListener
 
-
 class RaceEngineerRuntime:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings

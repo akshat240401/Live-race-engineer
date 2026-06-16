@@ -4,7 +4,6 @@ from queue import Queue, Empty
 from threading import Thread, Event
 from typing import Optional
 
-
 class VoiceEngineer:
     def __init__(self, enabled: bool = False, rate: int = 185, volume: float = 0.85) -> None:
         self.enabled = enabled

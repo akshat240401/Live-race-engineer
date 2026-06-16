@@ -5,10 +5,8 @@ from math import hypot, isfinite
 from threading import Lock
 from time import time
 from typing import Any
-
 from app.f1.packets import ParsedPacket
 from app.telemetry.models import LiveTelemetrySnapshot, EngineerMessage, LapSummary, compound_name
-
 
 class LiveTelemetryState:
     def __init__(self, history_limit: int = 600) -> None:

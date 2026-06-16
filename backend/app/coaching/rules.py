@@ -3,10 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from time import time
 from typing import Any
-
 from app.telemetry.models import LiveTelemetrySnapshot, EngineerMessage
 from app.telemetry.state import LiveTelemetryState
-
 
 @dataclass
 class RuleResult:
@@ -22,12 +20,10 @@ class RuleResult:
     voice_cooldown_s: float | None = None
     can_voice: bool = True
 
-
 class CoachingRuleEngine:
     """Rule-based coaching engine.
-
-    The dashboard can show detail, but the radio layer receives short radio lines
-    and longer cooldowns so it does not spam the driver while racing.
+    The dashboard can show detail, but the radio receives short radio lines
+    and longer cooldowns so it does not spam the driver while racing
     """
 
     def __init__(self, state: LiveTelemetryState) -> None:

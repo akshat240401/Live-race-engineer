@@ -2,9 +2,7 @@ from __future__ import annotations
 
 from time import time
 from typing import Iterable
-
 from app.telemetry.models import EngineerMessage
-
 
 SEVERITY_PRIORITY = {
     "danger": 90,
@@ -13,10 +11,8 @@ SEVERITY_PRIORITY = {
     "info": 45,
 }
 
-
 class RaceRadioDirector:
     """Decides what should actually be spoken.
-
     The rule engine can create several dashboard messages. The radio should only
     choose the most useful short call, then wait before talking again.
     """
@@ -53,7 +49,7 @@ class RaceRadioDirector:
             if now_ts - self._last_by_key.get(key, 0.0) < cooldown:
                 continue
 
-            # Let urgent calls interrupt sooner; keep normal advice from spamming.
+            # Let urgent calls interrupt sooner keeping normal advice from spamming
             if priority < 85 and now_ts - self._last_global_spoken < self.min_gap_s:
                 continue
 
@@ -74,14 +70,14 @@ class RaceRadioDirector:
         if isinstance(radio, str) and radio.strip():
             return self._clean(radio)
 
-        # Safe fallback for any future message that does not provide a radio line.
+        # Safe fallback for any future message that does not provide a radio line
         if msg.severity in {"danger", "warning", "success"}:
             return self._clean(msg.title)
         return None
 
     def _clean(self, text: str) -> str:
         text = " ".join(text.strip().split())
-        # Keep radio calls short. The dashboard still shows the full message.
+        # Keep radio calls short. The dashboard shows the full message
         words = text.split()
         if len(words) > 9:
             text = " ".join(words[:9]) + "."

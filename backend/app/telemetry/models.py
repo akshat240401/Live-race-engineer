@@ -3,9 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field, asdict
 from time import time
 from typing import Any
-
 from app.f1.constants import TYRE_COMPOUNDS
-
 
 @dataclass
 class EngineerMessage:
@@ -19,7 +17,6 @@ class EngineerMessage:
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
-
 
 @dataclass
 class LapSummary:
@@ -36,7 +33,6 @@ class LapSummary:
         d = asdict(self)
         d["lap_time_s"] = self.lap_time_s
         return d
-
 
 @dataclass
 class LiveTelemetrySnapshot:
@@ -104,10 +100,8 @@ class LiveTelemetrySnapshot:
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
-
 def compound_name(value: int) -> str:
     return TYRE_COMPOUNDS.get(value, f"ID-{value}")
-
 
 def now() -> float:
     return time()
