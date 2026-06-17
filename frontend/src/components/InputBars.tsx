@@ -9,12 +9,12 @@ function InputBar({
 }: {
   label: string;
   value: number;
-  type: "throttle" | "brake" | "ers";
+  type: "throttle" | "brake";
 }) {
   const pct = clamp01(value) * 100;
 
   return (
-    <div className="input-row">
+    <div className="input-row compact-input-row">
       <div className="input-head">
         <span>{label}</span>
         <span>{pct.toFixed(0)}%</span>
@@ -32,7 +32,7 @@ function Steering({ steer }: { steer: number }) {
   const left = 50 + clamped * 50;
 
   return (
-    <div className="input-row">
+    <div className="input-row compact-input-row">
       <div className="input-head">
         <span>Steering</span>
         <span>{(clamped * 100).toFixed(0)}%</span>
@@ -50,21 +50,18 @@ export function InputBars({
   throttle,
   brake,
   steer,
-  ers,
 }: {
   throttle: number;
   brake: number;
   steer: number;
-  ers: number;
+  ers?: number;
 }) {
   return (
-    <div className="panel">
+    <div className="panel compact-inputs-panel">
       <h3>Driver inputs</h3>
-
       <InputBar label="Throttle" value={throttle} type="throttle" />
       <InputBar label="Brake" value={brake} type="brake" />
       <Steering steer={steer} />
-      <InputBar label="ERS" value={ers / 100} type="ers" />
     </div>
   );
 }
