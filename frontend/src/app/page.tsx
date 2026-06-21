@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { Controls } from "../components/Controls";
 import { EngineerFeed } from "../components/EngineerFeed";
+import { HandsFreeRadio } from "../components/HandsFreeRadio";
 import { InputBars } from "../components/InputBars";
 import { TelemetryChart } from "../components/TelemetryChart";
 import { TrackMap } from "../components/TrackMap";
@@ -123,6 +124,10 @@ const emptyControls: ControlState = {
   last_voice_error: null,
   last_udp_error: null,
   llm_enabled: false,
+  live_llm_enabled: false,
+  radio_enabled: false,
+  radio_state: "disabled",
+  radio_mode: "race",
 };
 
 function gearLabel(gear: number): string {
@@ -519,6 +524,19 @@ export default function Home() {
                 snapshot.recording_enabled
               }
             />
+
+            <StatusChip
+              label="RADIO"
+              value={(
+                controls.radio_state ||
+                "OFF"
+              ).toUpperCase()}
+              active={
+                controls.radio_enabled &&
+                controls.radio_state !==
+                  "error"
+              }
+            />
           </div>
         </div>
 
@@ -693,6 +711,8 @@ export default function Home() {
         </section>
 
         <aside className="side-column">
+          <HandsFreeRadio />
+
           <div className="race-radio">
             <EngineerFeed
               messages={
