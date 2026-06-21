@@ -38,3 +38,11 @@ logs/
 Thumbs.db
 .vscode/
 .idea/
+
+# Local race session data
+backend/data/sessions/
+data/sessions/
+
+# TypeScript build cache
+frontend/tsconfig.tsbuildinfo
+*.tsbuildinfo
