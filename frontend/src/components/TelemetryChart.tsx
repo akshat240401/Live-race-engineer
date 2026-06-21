@@ -1,168 +1,571 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+
 import { HistoryPoint } from "../types/telemetry";
 
 const MAX_RENDERED_POINTS = 6000;
 
-function sampledHistory(history: HistoryPoint[]): { points: HistoryPoint[]; stride: number } {
-  const stride = Math.max(1, Math.ceil(history.length / MAX_RENDERED_POINTS));
-  if (stride === 1) return { points: history, stride };
+type SampledHistory = {
+  points: HistoryPoint[];
+  stride: number;
+};
 
-  const points: HistoryPoint[] = [];
-  for (let index = 0; index < history.length; index += stride) {
-    points.push(history[index]);
+function sampledHistory(
+  history: HistoryPoint[],
+): SampledHistory {
+  const stride = Math.max(
+    1,
+    Math.ceil(
+      history.length / MAX_RENDERED_POINTS,
+    ),
+  );
+
+  if (stride === 1) {
+    return {
+      points: history,
+      stride,
+    };
   }
 
-  const last = history[history.length - 1];
-  if (last && points[points.length - 1] !== last) points.push(last);
+  const points: HistoryPoint[] = [];
 
-  return { points, stride };
+  for (
+    let index = 0;
+    index < history.length;
+    index += stride
+  ) {
+    const point = history[index];
+
+    if (point) {
+      points.push(point);
+    }
+  }
+
+  const lastPoint =
+    history[history.length - 1];
+
+  const lastSampledPoint =
+    points[points.length - 1];
+
+  if (
+    lastPoint &&
+    lastSampledPoint !== lastPoint
+  ) {
+    points.push(lastPoint);
+  }
+
+  return {
+    points,
+    stride,
+  };
 }
 
-export function TelemetryChart({ history }: { history: HistoryPoint[] }) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const scrollRef = useRef<HTMLDivElement | null>(null);
+function clamp01(value: number): number {
+  return Math.max(
+    0,
+    Math.min(1, value),
+  );
+}
+
+function drawTelemetryLine({
+  context,
+  points,
+  getter,
+  maxValue,
+  color,
+  lineWidth,
+  padX,
+  padTop,
+  plotHeight,
+  canvasWidth,
+}: {
+  context: CanvasRenderingContext2D;
+  points: HistoryPoint[];
+  getter: (
+    point: HistoryPoint,
+  ) => number;
+  maxValue: number;
+  color: string;
+  lineWidth: number;
+  padX: number;
+  padTop: number;
+  plotHeight: number;
+  canvasWidth: number;
+}): void {
+  if (
+    points.length < 2 ||
+    maxValue <= 0
+  ) {
+    return;
+  }
+
+  context.strokeStyle = color;
+  context.lineWidth = lineWidth;
+  context.lineJoin = "round";
+  context.lineCap = "round";
+  context.beginPath();
+
+  points.forEach(
+    (point, index) => {
+      const rawValue = getter(point);
+
+      const safeValue = Number.isFinite(
+        rawValue,
+      )
+        ? rawValue
+        : 0;
+
+      const normalized = clamp01(
+        safeValue / maxValue,
+      );
+
+      const denominator = Math.max(
+        1,
+        points.length - 1,
+      );
+
+      const x =
+        padX +
+        (index / denominator) *
+          (canvasWidth - padX * 2);
+
+      const y =
+        padTop +
+        plotHeight -
+        normalized * plotHeight;
+
+      if (index === 0) {
+        context.moveTo(x, y);
+      } else {
+        context.lineTo(x, y);
+      }
+    },
+  );
+
+  context.stroke();
+}
+
+export function TelemetryChart({
+  history,
+}: {
+  history: HistoryPoint[];
+}) {
+  const canvasRef =
+    useRef<HTMLCanvasElement | null>(
+      null,
+    );
+
+  const scrollRef =
+    useRef<HTMLDivElement | null>(
+      null,
+    );
 
   useEffect(() => {
     const scroller = scrollRef.current;
-    if (!scroller) return;
 
-    function onWheel(event: WheelEvent) {
-      if (!scroller) return;
-      if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
-
-      const canScroll = scroller.scrollWidth > scroller.clientWidth;
-      if (!canScroll) return;
-
-      event.preventDefault();
-      scroller.scrollLeft += event.deltaY;
+    if (!scroller) {
+      return;
     }
 
-    scroller.addEventListener("wheel", onWheel, { passive: false });
-    return () => scroller.removeEventListener("wheel", onWheel);
+    const scrollContainer: HTMLDivElement =
+      scroller;
+
+    function onWheel(
+      event: WheelEvent,
+    ): void {
+      if (
+        Math.abs(event.deltaY) <=
+        Math.abs(event.deltaX)
+      ) {
+        return;
+      }
+
+      const canScroll =
+        scrollContainer.scrollWidth >
+        scrollContainer.clientWidth;
+
+      if (!canScroll) {
+        return;
+      }
+
+      event.preventDefault();
+
+      scrollContainer.scrollLeft +=
+        event.deltaY;
+    }
+
+    scrollContainer.addEventListener(
+      "wheel",
+      onWheel,
+      {
+        passive: false,
+      },
+    );
+
+    return () => {
+      scrollContainer.removeEventListener(
+        "wheel",
+        onWheel,
+      );
+    };
   }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const scroller = scrollRef.current;
-    if (!canvas || !scroller) return;
 
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const viewport = scroller.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
-    const { points } = sampledHistory(history);
-
-    const wasNearRight = scroller.scrollWidth - scroller.clientWidth - scroller.scrollLeft < 90;
-    const visibleWidth = Math.max(320, viewport.width);
-    const visibleHeight = Math.max(190, viewport.height || 240);
-    const cssWidth = Math.max(visibleWidth, Math.min(24000, points.length * 3.4));
-    const cssHeight = visibleHeight;
-
-    canvas.style.width = `${cssWidth}px`;
-    canvas.style.height = `${cssHeight}px`;
-    canvas.width = Math.floor(cssWidth * dpr);
-    canvas.height = Math.floor(cssHeight * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    const w = cssWidth;
-    const h = cssHeight;
-    const padX = 18;
-    const padTop = 38;
-    const padBottom = 28;
-    const plotH = Math.max(40, h - padTop - padBottom);
-
-    ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = "#090c10";
-    ctx.fillRect(0, 0, w, h);
-
-    ctx.strokeStyle = "#222b36";
-    ctx.lineWidth = 1;
-
-    for (let i = 0; i <= 4; i += 1) {
-      const y = padTop + (plotH * i) / 4;
-      ctx.beginPath();
-      ctx.moveTo(padX, y);
-      ctx.lineTo(w - padX, y);
-      ctx.stroke();
-    }
-
-    const verticalLines = Math.min(36, Math.max(4, Math.floor(w / 240)));
-    ctx.strokeStyle = "rgba(34, 43, 54, 0.55)";
-    for (let i = 0; i <= verticalLines; i += 1) {
-      const x = padX + ((w - padX * 2) * i) / verticalLines;
-      ctx.beginPath();
-      ctx.moveTo(x, padTop);
-      ctx.lineTo(x, h - padBottom);
-      ctx.stroke();
-    }
-
-    ctx.fillStyle = "#8c98a8";
-    ctx.font = "12px Arial";
-    ctx.fillText("Speed", 18, 22);
-    ctx.fillStyle = "#2ad36b";
-    ctx.fillText("Throttle", 76, 22);
-    ctx.fillStyle = "#ff5252";
-    ctx.fillText("Brake", 154, 22);
-
-    if (points.length < 2) {
-      ctx.fillStyle = "#5e6a7a";
-      ctx.fillText("Waiting for live telemetry trace...", 18, 62);
+    if (!canvas || !scroller) {
       return;
     }
 
-    function xAt(index: number): number {
-      return padX + (index / (points.length - 1)) * (w - padX * 2);
+    const context =
+      canvas.getContext("2d");
+
+    if (!context) {
+      return;
     }
 
-    function drawLine(getter: (point: HistoryPoint) => number, max: number, color: string, width: number) {
-      ctx.strokeStyle = color;
-      ctx.lineWidth = width;
-      ctx.beginPath();
+    const viewport =
+      scroller.getBoundingClientRect();
 
-      points.forEach((point, index) => {
-        const normalized = Math.max(0, Math.min(1, getter(point) / max));
-        const x = xAt(index);
-        const y = padTop + plotH - normalized * plotH;
-        if (index === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
+    const devicePixelRatio =
+      window.devicePixelRatio || 1;
 
-      ctx.stroke();
+    const {
+      points,
+    } = sampledHistory(history);
+
+    const distanceFromRight =
+      scroller.scrollWidth -
+      scroller.clientWidth -
+      scroller.scrollLeft;
+
+    const wasNearRight =
+      distanceFromRight < 90;
+
+    const visibleWidth = Math.max(
+      320,
+      viewport.width,
+    );
+
+    const visibleHeight = Math.max(
+      190,
+      viewport.height || 240,
+    );
+
+    const contentWidth =
+      points.length > 1
+        ? points.length * 3.4
+        : visibleWidth;
+
+    const cssWidth = Math.max(
+      visibleWidth,
+      Math.min(
+        24000,
+        contentWidth,
+      ),
+    );
+
+    const cssHeight = visibleHeight;
+
+    canvas.style.width =
+      `${cssWidth}px`;
+
+    canvas.style.height =
+      `${cssHeight}px`;
+
+    canvas.width = Math.floor(
+      cssWidth * devicePixelRatio,
+    );
+
+    canvas.height = Math.floor(
+      cssHeight * devicePixelRatio,
+    );
+
+    context.setTransform(
+      devicePixelRatio,
+      0,
+      0,
+      devicePixelRatio,
+      0,
+      0,
+    );
+
+    const canvasWidth = cssWidth;
+    const canvasHeight = cssHeight;
+
+    const padX = 18;
+    const padTop = 38;
+    const padBottom = 28;
+
+    const plotHeight = Math.max(
+      40,
+      canvasHeight -
+        padTop -
+        padBottom,
+    );
+
+    context.clearRect(
+      0,
+      0,
+      canvasWidth,
+      canvasHeight,
+    );
+
+    context.fillStyle = "#090c10";
+
+    context.fillRect(
+      0,
+      0,
+      canvasWidth,
+      canvasHeight,
+    );
+
+    context.strokeStyle =
+      "#222b36";
+
+    context.lineWidth = 1;
+
+    for (
+      let index = 0;
+      index <= 4;
+      index += 1
+    ) {
+      const y =
+        padTop +
+        (plotHeight * index) / 4;
+
+      context.beginPath();
+
+      context.moveTo(
+        padX,
+        y,
+      );
+
+      context.lineTo(
+        canvasWidth - padX,
+        y,
+      );
+
+      context.stroke();
     }
 
-    drawLine((p) => p.speed_kph, 340, "#4da3ff", 2);
-    drawLine((p) => p.throttle * 340, 340, "#2ad36b", 1.5);
-    drawLine((p) => p.brake * 340, 340, "#ff5252", 1.5);
+    const verticalLines = Math.min(
+      36,
+      Math.max(
+        4,
+        Math.floor(
+          canvasWidth / 240,
+        ),
+      ),
+    );
 
-    const firstTime = points[0]?.session_time ?? 0;
-    const lastTime = points[points.length - 1]?.session_time ?? firstTime;
-    ctx.fillStyle = "#5e6a7a";
-    ctx.font = "11px Arial";
-    ctx.fillText(`${Math.round(firstTime)}s`, padX, h - 9);
-    ctx.textAlign = "right";
-    ctx.fillText(`${Math.round(lastTime)}s`, w - padX, h - 9);
-    ctx.textAlign = "left";
+    context.strokeStyle =
+      "rgba(34, 43, 54, 0.55)";
+
+    for (
+      let index = 0;
+      index <= verticalLines;
+      index += 1
+    ) {
+      const x =
+        padX +
+        (
+          (
+            canvasWidth -
+            padX * 2
+          ) *
+          index
+        ) /
+          verticalLines;
+
+      context.beginPath();
+
+      context.moveTo(
+        x,
+        padTop,
+      );
+
+      context.lineTo(
+        x,
+        canvasHeight - padBottom,
+      );
+
+      context.stroke();
+    }
+
+    context.textAlign = "left";
+    context.textBaseline =
+      "alphabetic";
+
+    context.font = "12px Arial";
+
+    context.fillStyle =
+      "#4da3ff";
+
+    context.fillText(
+      "Speed",
+      18,
+      22,
+    );
+
+    context.fillStyle =
+      "#2ad36b";
+
+    context.fillText(
+      "Throttle",
+      76,
+      22,
+    );
+
+    context.fillStyle =
+      "#ff5252";
+
+    context.fillText(
+      "Brake",
+      154,
+      22,
+    );
+
+    if (points.length < 2) {
+      context.fillStyle =
+        "#5e6a7a";
+
+      context.font =
+        "12px Arial";
+
+      context.fillText(
+        "Waiting for live telemetry trace...",
+        18,
+        62,
+      );
+
+      return;
+    }
+
+    drawTelemetryLine({
+      context,
+      points,
+      getter: (
+        point,
+      ) => point.speed_kph,
+      maxValue: 340,
+      color: "#4da3ff",
+      lineWidth: 2,
+      padX,
+      padTop,
+      plotHeight,
+      canvasWidth,
+    });
+
+    drawTelemetryLine({
+      context,
+      points,
+      getter: (
+        point,
+      ) => point.throttle,
+      maxValue: 1,
+      color: "#2ad36b",
+      lineWidth: 1.5,
+      padX,
+      padTop,
+      plotHeight,
+      canvasWidth,
+    });
+
+    drawTelemetryLine({
+      context,
+      points,
+      getter: (
+        point,
+      ) => point.brake,
+      maxValue: 1,
+      color: "#ff5252",
+      lineWidth: 1.5,
+      padX,
+      padTop,
+      plotHeight,
+      canvasWidth,
+    });
+
+    const firstPoint = points[0];
+
+    const lastPoint =
+      points[points.length - 1];
+
+    const firstTime =
+      firstPoint?.session_time ?? 0;
+
+    const lastTime =
+      lastPoint?.session_time ??
+      firstTime;
+
+    context.fillStyle =
+      "#5e6a7a";
+
+    context.font =
+      "11px Arial";
+
+    context.textAlign =
+      "left";
+
+    context.fillText(
+      `${Math.round(firstTime)}s`,
+      padX,
+      canvasHeight - 9,
+    );
+
+    context.textAlign =
+      "right";
+
+    context.fillText(
+      `${Math.round(lastTime)}s`,
+      canvasWidth - padX,
+      canvasHeight - 9,
+    );
+
+    context.textAlign =
+      "left";
 
     if (wasNearRight) {
-      scroller.scrollLeft = scroller.scrollWidth;
+      requestAnimationFrame(() => {
+        scroller.scrollLeft =
+          scroller.scrollWidth;
+      });
     }
   }, [history]);
 
-  const stride = Math.max(1, Math.ceil(history.length / MAX_RENDERED_POINTS));
+  const stride = Math.max(
+    1,
+    Math.ceil(
+      history.length /
+        MAX_RENDERED_POINTS,
+    ),
+  );
 
   return (
     <div className="panel telemetry-panel">
       <div className="panel-heading">
         <h3>Telemetry trace</h3>
+
         <span className="chart-meta">
-          scroll wheel inside · {history.length} pts{stride > 1 ? ` · sampled ${stride}x` : ""}
+          scroll wheel inside ·{" "}
+          {history.length} pts
+          {stride > 1
+            ? ` · sampled ${stride}x`
+            : ""}
         </span>
       </div>
-      <div className="chart-scroll" ref={scrollRef}>
-        <canvas ref={canvasRef} className="chart-canvas" />
+
+      <div
+        className="chart-scroll"
+        ref={scrollRef}
+      >
+        <canvas
+          ref={canvasRef}
+          className="chart-canvas"
+        />
       </div>
     </div>
   );
