@@ -1,40 +1,58 @@
 .card {
-  margin: 16px 0;
-  padding: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 14px;
+  min-width: 0;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 10px;
   background: rgba(6, 11, 18, 0.78);
+  overflow: hidden;
 }
 
 .header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 14px;
+  gap: 10px;
+  margin-bottom: 8px;
+  min-width: 0;
+}
+
+.header > div:first-child {
+  min-width: 0;
 }
 
 .header span,
 .primaryGrid span,
 .metrics span,
 .battles span {
-  color: rgba(255, 255, 255, 0.56);
-  font-size: 0.68rem;
-  letter-spacing: 0.11em;
+  color: rgba(255, 255, 255, 0.54);
+  font-size: 9px;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
 .header h4 {
-  margin: 4px 0 0;
-  font-size: 1rem;
+  margin: 2px 0 0;
+  font-size: 13px;
+  line-height: 1.15;
+}
+
+.header small {
+  display: block;
+  margin-top: 3px;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
 }
 
 .battle {
-  padding: 7px 10px;
+  flex: 0 0 auto;
+  padding: 5px 7px;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.16);
-  font-size: 0.72rem;
-  font-weight: 800;
+  font-size: 9px;
+  font-weight: 850;
+  white-space: nowrap;
 }
 
 .attacking,
@@ -62,14 +80,15 @@
 .primaryGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  gap: 6px;
 }
 
 .primaryGrid article,
 .metrics > div,
 .battles > div {
-  padding: 12px;
-  border-radius: 10px;
+  min-width: 0;
+  padding: 7px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.035);
 }
 
@@ -77,22 +96,30 @@
 .metrics strong,
 .battles strong {
   display: block;
-  margin-top: 5px;
-  font-size: 0.88rem;
+  margin-top: 3px;
+  font-size: 11px;
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .primaryGrid p {
-  margin: 7px 0 0;
-  color: rgba(255, 255, 255, 0.72);
-  font-size: 0.78rem;
-  line-height: 1.4;
+  display: -webkit-box;
+  margin: 4px 0 0;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 9px;
+  line-height: 1.3;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .metrics,
 .battles {
   display: grid;
-  gap: 10px;
-  margin-top: 10px;
+  gap: 6px;
+  margin-top: 6px;
 }
 
 .metrics {
@@ -106,28 +133,24 @@
 .metrics small,
 .battles small {
   display: block;
-  margin-top: 4px;
-  color: rgba(255, 255, 255, 0.58);
-  font-size: 0.72rem;
+  margin-top: 3px;
+  color: rgba(255, 255, 255, 0.52);
+  font-size: 8px;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .error {
-  margin: 0 0 10px;
+  margin: 0 0 7px;
   color: #ff8d8d;
-  font-size: 0.78rem;
+  font-size: 10px;
 }
 
-@media (max-width: 980px) {
+@media (max-width: 430px) {
   .primaryGrid,
   .metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 640px) {
-  .primaryGrid,
-  .metrics,
-  .battles {
-    grid-template-columns: 1fr;
   }
 }

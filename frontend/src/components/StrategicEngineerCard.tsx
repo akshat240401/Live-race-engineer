@@ -71,7 +71,10 @@ function gap(value: number | null): string {
   return value === null ? "--" : `${value.toFixed(1)}s`;
 }
 
-function trend(value: number | null, role: "ahead" | "behind"): string {
+function trend(
+  value: number | null,
+  role: "ahead" | "behind",
+): string {
   if (value === null || Math.abs(value) < 0.08) {
     return "stable";
   }
@@ -79,6 +82,13 @@ function trend(value: number | null, role: "ahead" | "behind"): string {
     return value < 0 ? "closing" : "opening";
   }
   return value < 0 ? "closing threat" : "pulling away";
+}
+
+function raceContext(decision: LiveRaceDecision): string {
+  const position = decision.position ? `P${decision.position}` : "P--";
+  const lap = decision.lap_number ?? "--";
+  const total = decision.total_laps ?? "--";
+  return `${position} · L${lap}/${total}`;
 }
 
 export function StrategicEngineerCard() {
@@ -129,9 +139,12 @@ export function StrategicEngineerCard() {
         <div>
           <span>Live decision engine</span>
           <h4>Strategic race engineer</h4>
+          <small>{raceContext(decision)}</small>
         </div>
         <div
-          className={`${styles.battle} ${styles[decision.battle_state] || ""}`}
+          className={`${styles.battle} ${
+            styles[decision.battle_state] || ""
+          }`}
         >
           {label(decision.battle_state)}
         </div>
@@ -145,43 +158,35 @@ export function StrategicEngineerCard() {
         <article>
           <span>Box call</span>
           <strong>{label(decision.box.action)}</strong>
-          <p>{decision.box.summary}</p>
+          <p title={decision.box.summary}>{decision.box.summary}</p>
         </article>
         <article>
           <span>ERS plan</span>
           <strong>{label(decision.energy.action)}</strong>
-          <p>{decision.energy.summary}</p>
+          <p title={decision.energy.summary}>{decision.energy.summary}</p>
         </article>
         <article>
-          <span>Coaching focus</span>
+          <span>Coaching</span>
           <strong>{label(decision.coaching.focus)}</strong>
-          <p>{decision.coaching.summary}</p>
+          <p title={decision.coaching.summary}>{decision.coaching.summary}</p>
         </article>
       </div>
 
       <div className={styles.metrics}>
         <div>
           <span>Battery</span>
-          <strong>
-            {decision.energy.battery_percent.toFixed(0)}%
-          </strong>
+          <strong>{decision.energy.battery_percent.toFixed(0)}%</strong>
           <small>
             target {decision.energy.target_percent.toFixed(0)}% · reserve {decision.energy.minimum_reserve_percent.toFixed(0)}%
           </small>
         </div>
         <div>
           <span>Tyres</span>
-          <strong>
-            {decision.tyres.max_wear_pct.toFixed(0)}% wear
-          </strong>
-          <small>
-            {decision.tyres.projected_finish_wear_pct === null
-              ? decision.tyres.status
-              : `${decision.tyres.projected_finish_wear_pct.toFixed(0)}% projected finish`}
-          </small>
+          <strong>{decision.tyres.max_wear_pct.toFixed(0)}%</strong>
+          <small>{decision.tyres.compound}</small>
         </div>
         <div>
-          <span>Rejoin estimate</span>
+          <span>Rejoin</span>
           <strong>
             {decision.box.expected_rejoin_position
               ? `P${decision.box.expected_rejoin_position}`
@@ -189,38 +194,36 @@ export function StrategicEngineerCard() {
           </strong>
           <small>
             {decision.box.traffic_cars.length > 0
-              ? `traffic: ${decision.box.traffic_cars.slice(0, 2).join(", ")}`
+              ? decision.box.traffic_cars.slice(0, 2).join(", ")
               : "no traffic estimate"}
           </small>
         </div>
         <div>
           <span>Confidence</span>
-          <strong>
-            {(decision.box.confidence * 100).toFixed(0)}%
-          </strong>
-          <small>
-            data quality {(decision.data_quality * 100).toFixed(0)}%
-          </small>
+          <strong>{(decision.box.confidence * 100).toFixed(0)}%</strong>
+          <small>data {(decision.data_quality * 100).toFixed(0)}%</small>
         </div>
       </div>
 
       <div className={styles.battles}>
         <div>
           <span>Ahead</span>
-          <strong>
-            {decision.car_ahead?.name || "No car data"}
-          </strong>
+          <strong>{decision.car_ahead?.name || "No car data"}</strong>
           <small>
-            {gap(decision.car_ahead?.gap_s ?? null)} · {trend(decision.car_ahead?.gap_trend_s_per_lap ?? null, "ahead")}
+            {gap(decision.car_ahead?.gap_s ?? null)} · {trend(
+              decision.car_ahead?.gap_trend_s_per_lap ?? null,
+              "ahead",
+            )}
           </small>
         </div>
         <div>
           <span>Behind</span>
-          <strong>
-            {decision.car_behind?.name || "No car data"}
-          </strong>
+          <strong>{decision.car_behind?.name || "No car data"}</strong>
           <small>
-            {gap(decision.car_behind?.gap_s ?? null)} · {trend(decision.car_behind?.gap_trend_s_per_lap ?? null, "behind")}
+            {gap(decision.car_behind?.gap_s ?? null)} · {trend(
+              decision.car_behind?.gap_trend_s_per_lap ?? null,
+              "behind",
+            )}
           </small>
         </div>
       </div>

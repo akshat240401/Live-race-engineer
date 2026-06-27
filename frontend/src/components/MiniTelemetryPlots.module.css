@@ -1,0 +1,220 @@
+.panel {
+  min-width: 0;
+  border: 1px solid #1b2633;
+  border-radius: 10px;
+  background: #05070a;
+  padding: 8px;
+  display: grid;
+  grid-template-rows: auto auto;
+  align-content: start;
+  gap: 7px;
+}
+
+.header {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.header > div:first-child {
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.header span,
+.header small {
+  color: #718095;
+  font-size: 7px;
+  font-weight: 850;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.header strong {
+  color: #eff4fb;
+  font-size: 12px;
+}
+
+.legend {
+  display: flex;
+  gap: 8px;
+}
+
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.legend i {
+  width: 11px;
+  height: 2px;
+  border-radius: 999px;
+}
+
+.currentKey { background: #58a8ff; }
+.referenceKey { background: #394657; }
+
+.stack {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+}
+
+.plot {
+  min-width: 0;
+  height: 68px;
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr);
+  align-items: stretch;
+  border: 1px solid #17212d;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #070a0e;
+}
+
+.plotLabel {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  padding: 6px 7px;
+  border-right: 1px solid #17212d;
+  background: #05070a;
+}
+
+.plotLabel span {
+  color: #78869a;
+  font-size: 7px;
+  font-weight: 850;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.plotLabel strong {
+  margin-top: 2px;
+  color: #f4f7fb;
+  font-size: 18px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.plotLabel small {
+  margin-top: 2px;
+  color: #657286;
+  font-size: 7px;
+}
+
+.svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.midline {
+  stroke: #141c26;
+  stroke-width: 1;
+}
+
+.currentLine,
+.referenceLine {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.currentLine {
+  stroke: #58a8ff;
+  stroke-width: 1.8;
+}
+
+.referenceLine {
+  stroke: #394657;
+  stroke-width: 1.1;
+}
+
+.throttle .currentLine { stroke: #38d984; }
+.brake .currentLine { stroke: #ff6262; }
+
+@media (max-width: 880px) {
+  .plot {
+    grid-template-columns: 60px minmax(0, 1fr);
+  }
+
+  .legend {
+    display: none;
+  }
+}
+
+/* Large desktop density for the same glanceability previously seen at 140%. */
+@media (min-width: 1501px) and (min-height: 700px) {
+  .panel {
+    padding: 10px;
+    gap: 9px;
+    border-radius: 11px;
+  }
+
+  .header {
+    gap: 12px;
+  }
+
+  .header span,
+  .header small {
+    font-size: 9px;
+  }
+
+  .header strong {
+    font-size: 15px;
+  }
+
+  .legend {
+    gap: 10px;
+  }
+
+  .legend i {
+    width: 13px;
+  }
+
+  .stack {
+    gap: 8px;
+  }
+
+  .plot {
+    height: 90px;
+    grid-template-columns: 86px minmax(0, 1fr);
+    border-radius: 9px;
+  }
+
+  .plotLabel {
+    padding: 8px 9px;
+  }
+
+  .plotLabel span {
+    font-size: 9px;
+  }
+
+  .plotLabel strong {
+    margin-top: 3px;
+    font-size: 23px;
+  }
+
+  .plotLabel small {
+    margin-top: 3px;
+    font-size: 9px;
+  }
+
+  .currentLine {
+    stroke-width: 2.1;
+  }
+
+  .referenceLine {
+    stroke-width: 1.3;
+  }
+}

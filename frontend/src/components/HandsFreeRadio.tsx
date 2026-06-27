@@ -342,7 +342,7 @@ export function HandsFreeRadio() {
         </span>
       </div>
 
-      <div className={styles.listenBanner}>
+      <div className={styles.listenBanner} aria-live="polite">
         <span
           className={`${styles.listenDot} ${
             status.awaiting_command || status.state === "listening"
@@ -364,40 +364,7 @@ export function HandsFreeRadio() {
 
       <StrategicEngineerCard />
 
-      <div className={styles.metaGrid}>
-        <div>
-          <span>Microphone</span>
-          <strong>
-            {status.input_device_name ||
-              "Default input"}
-          </strong>
-        </div>
-        <div>
-          <span>Acknowledgement</span>
-          <strong>{status.ack_mode}</strong>
-        </div>
-        <div>
-          <span>Speech model</span>
-          <strong>
-            {status.stt_model}{" "}
-            {status.stt_ready ? "ready" : "loading"}
-          </strong>
-        </div>
-        <div>
-          <span>Response style</span>
-          <strong>{status.response_style}</strong>
-        </div>
-        <div>
-          <span>Noise floor</span>
-          <strong>{status.noise_floor_rms.toFixed(0)} RMS</strong>
-        </div>
-        <div>
-          <span>Queued calls</span>
-          <strong>{status.pending_auto_messages}</strong>
-        </div>
-      </div>
-
-      <div className={styles.controls}>
+      <div className={styles.quickControls}>
         <button
           type="button"
           onClick={toggleEnabled}
@@ -417,98 +384,140 @@ export function HandsFreeRadio() {
 
         <button
           type="button"
-          onClick={calibrateNoise}
-          disabled={busy || !status.enabled || status.calibrating}
-        >
-          {status.calibrating ? "Calibrating..." : "Calibrate noise"}
-        </button>
-
-        <button
-          type="button"
-          onClick={repeatLast}
-          disabled={busy}
-        >
-          Repeat
-        </button>
-
-        <button
-          type="button"
           onClick={toggleQuiet}
           disabled={busy}
           className={status.muted ? styles.warningButton : ""}
         >
-          {status.muted ? "Resume updates" : "Quiet auto calls"}
+          {status.muted ? "Resume calls" : "Quiet calls"}
         </button>
       </div>
 
-      <div className={styles.modeRow}>
-        {(["minimal", "race", "coaching"] as RadioMode[]).map(
-          (mode) => (
+      <details className={styles.drawer}>
+        <summary>
+          Radio controls, diagnostics and transcript
+          <span>{status.transcript_count}</span>
+        </summary>
+
+        <div className={styles.drawerBody}>
+          <div className={styles.metaGrid}>
+            <div>
+              <span>Microphone</span>
+              <strong>
+                {status.input_device_name || "Default input"}
+              </strong>
+            </div>
+            <div>
+              <span>Acknowledgement</span>
+              <strong>{status.ack_mode}</strong>
+            </div>
+            <div>
+              <span>Speech model</span>
+              <strong>
+                {status.stt_model} {status.stt_ready ? "ready" : "loading"}
+              </strong>
+            </div>
+            <div>
+              <span>Response style</span>
+              <strong>{status.response_style}</strong>
+            </div>
+            <div>
+              <span>Noise floor</span>
+              <strong>{status.noise_floor_rms.toFixed(0)} RMS</strong>
+            </div>
+            <div>
+              <span>Queued calls</span>
+              <strong>{status.pending_auto_messages}</strong>
+            </div>
+          </div>
+
+          <div className={styles.controls}>
             <button
               type="button"
-              key={mode}
-              onClick={() => changeMode(mode)}
-              disabled={busy}
-              className={
-                status.mode === mode ? styles.selectedMode : ""
-              }
+              onClick={calibrateNoise}
+              disabled={busy || !status.enabled || status.calibrating}
             >
-              {mode}
+              {status.calibrating ? "Calibrating..." : "Calibrate noise"}
             </button>
-          ),
-        )}
-      </div>
 
-      {status.pending_confirmation ? (
-        <p className={styles.confirmation}>
-          Confirmation required: {status.pending_confirmation}. Say
-          “confirm” or “cancel”.
-        </p>
-      ) : null}
-
-      <div className={styles.transcript}>
-        {lastEntries.length === 0 ? (
-          <p className={styles.empty}>
-            No radio conversation yet.
-          </p>
-        ) : (
-          lastEntries.map((entry) => (
-            <div
-              key={entry.id}
-              className={`${styles.entry} ${
-                entry.speaker === "driver"
-                  ? styles.driver
-                  : entry.speaker === "engineer"
-                    ? styles.engineer
-                    : styles.system
-              }`}
+            <button
+              type="button"
+              onClick={repeatLast}
+              disabled={busy}
             >
-              <div>
-                <strong>{entry.speaker}</strong>
-                <span>{timeLabel(entry.timestamp)}</span>
-              </div>
-              <p>{entry.text}</p>
-            </div>
-          ))
-        )}
-      </div>
+              Repeat last
+            </button>
+          </div>
 
-      <form
-        className={styles.testForm}
-        onSubmit={submitTest}
-      >
-        <input
-          value={testText}
-          onChange={(event: ChangeEvent<HTMLInputElement>) =>
-            setTestText(event.target.value)
-          }
-          aria-label="Manual radio test command"
-          placeholder="Test a radio question"
-        />
-        <button type="submit" disabled={busy}>
-          Test
-        </button>
-      </form>
+          <div className={styles.modeRow}>
+            {(["minimal", "race", "coaching"] as RadioMode[]).map(
+              (mode) => (
+                <button
+                  type="button"
+                  key={mode}
+                  onClick={() => changeMode(mode)}
+                  disabled={busy}
+                  className={
+                    status.mode === mode ? styles.selectedMode : ""
+                  }
+                >
+                  {mode}
+                </button>
+              ),
+            )}
+          </div>
+
+          {status.pending_confirmation ? (
+            <p className={styles.confirmation}>
+              Confirmation required: {status.pending_confirmation}. Say
+              “confirm” or “cancel”.
+            </p>
+          ) : null}
+
+          <div className={styles.transcript}>
+            {lastEntries.length === 0 ? (
+              <p className={styles.empty}>
+                No radio conversation yet.
+              </p>
+            ) : (
+              lastEntries.map((entry) => (
+                <div
+                  key={entry.id}
+                  className={`${styles.entry} ${
+                    entry.speaker === "driver"
+                      ? styles.driver
+                      : entry.speaker === "engineer"
+                        ? styles.engineer
+                        : styles.system
+                  }`}
+                >
+                  <div>
+                    <strong>{entry.speaker}</strong>
+                    <span>{timeLabel(entry.timestamp)}</span>
+                  </div>
+                  <p>{entry.text}</p>
+                </div>
+              ))
+            )}
+          </div>
+
+          <form
+            className={styles.testForm}
+            onSubmit={submitTest}
+          >
+            <input
+              value={testText}
+              onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                setTestText(event.target.value)
+              }
+              aria-label="Manual radio test command"
+              placeholder="Test a radio question"
+            />
+            <button type="submit" disabled={busy}>
+              Test
+            </button>
+          </form>
+        </div>
+      </details>
     </section>
   );
 }

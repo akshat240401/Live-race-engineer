@@ -1,0 +1,881 @@
+.panel {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  border: 1px solid #1b2633;
+  border-radius: 10px;
+  background: #030405;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.header > div:first-child {
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.header span {
+  color: #748297;
+  font-size: 7px;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.header strong {
+  color: #f3f6fa;
+  font-size: 14px;
+}
+
+.qualityPill {
+  min-width: 88px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid #203044;
+  border-radius: 999px;
+  background: #05070a;
+  padding: 5px 9px;
+}
+
+.qualityPill span {
+  font-size: 6px;
+}
+
+.qualityPill b {
+  color: #dceaff;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.error {
+  flex: 0 0 auto;
+  border: 1px solid #492222;
+  border-radius: 7px;
+  background: #120606;
+  color: #ff9090;
+  padding: 6px 8px;
+  font-size: 8px;
+  font-weight: 850;
+}
+
+.heroGrid {
+  flex: 0 0 auto;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(230px, 0.78fr);
+  gap: 8px;
+}
+
+.stateHero,
+.pressureCard,
+.rivalCard,
+.rivalEmpty,
+.forecastCard {
+  border: 1px solid #18222e;
+  background: #05070a;
+}
+
+.stateHero {
+  min-width: 0;
+  min-height: 142px;
+  display: grid;
+  grid-template-columns: 122px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  border-radius: 10px;
+  padding: 11px 13px;
+}
+
+.stateRing {
+  --progress: 0;
+  width: 112px;
+  height: 112px;
+  position: relative;
+}
+
+.stateRing svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.ringTrack,
+.ringValue {
+  fill: none;
+  stroke-width: 8;
+}
+
+.ringTrack {
+  stroke: #17202b;
+}
+
+.ringValue {
+  stroke: #718096;
+  stroke-linecap: round;
+}
+
+.attack .ringValue { stroke: #e7b14b; }
+.defend .ringValue { stroke: #ff6464; }
+.contested .ringValue { stroke: #9c7cff; }
+.clear .ringValue { stroke: #45d695; }
+.analyzing .ringValue { stroke: #58a8ff; }
+.stale .ringValue { stroke: #ff7a7a; }
+.observe .ringValue { stroke: #718096; }
+
+.stateRing > div {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  align-content: center;
+}
+
+.stateRing strong {
+  color: #f4f7fb;
+  font-size: 30px;
+  line-height: 0.9;
+}
+
+.stateRing span {
+  margin-top: 5px;
+  color: #dce4ee;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-align: center;
+}
+
+.stateCopy {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+}
+
+.stateCopy > span {
+  overflow: hidden;
+  color: #8090a5;
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stateCopy > strong {
+  margin-top: 3px;
+  color: #f5f7fb;
+  font-size: clamp(25px, 2vw, 38px);
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+}
+
+.stateCopy p {
+  margin: 7px 0 0;
+  color: #8c9aad;
+  font-size: 10px;
+}
+
+.targetMeta {
+  margin-top: 9px;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.targetMeta b {
+  color: #dce6f1;
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+
+.targetMeta small {
+  color: #6d7c91;
+  font-size: 8px;
+  font-weight: 850;
+}
+
+.pressureCard {
+  min-width: 0;
+  min-height: 142px;
+  border-radius: 10px;
+  padding: 13px;
+  display: grid;
+  align-content: center;
+  gap: 10px;
+}
+
+.pressureNumber {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.pressureNumber span,
+.pressureMetrics span,
+.rivalData span,
+.rivalPressure span,
+.forecastCard header span {
+  color: #708096;
+  font-size: 7px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.pressureNumber strong {
+  color: #f1f5fa;
+  font-size: 34px;
+  line-height: 0.9;
+  font-variant-numeric: tabular-nums;
+}
+
+.metricRail {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #141c26;
+}
+
+.metricRail i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #58a8ff;
+}
+
+.redRail i { background: #ff6464; }
+.blueRail i { background: #58a8ff; }
+
+.pressureMetrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.pressureMetrics > div {
+  min-width: 0;
+  border: 1px solid #151f2a;
+  border-radius: 7px;
+  background: #020304;
+  padding: 6px;
+}
+
+.pressureMetrics strong {
+  display: block;
+  margin-top: 2px;
+  color: #e1e8f1;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.rivals {
+  flex: 0 0 auto;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.rivalCard,
+.rivalEmpty {
+  min-width: 0;
+  min-height: 130px;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.rivalEmpty {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 4px;
+}
+
+.rivalEmpty span {
+  color: #68778b;
+  font-size: 7px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.rivalEmpty strong {
+  color: #a7b3c2;
+  font-size: 15px;
+}
+
+.rivalEmpty i {
+  color: #45d695;
+  font-size: 24px;
+  font-style: normal;
+}
+
+.rivalCard header {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.rivalCard header > div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.rivalCard header span {
+  color: #6f7e93;
+  font-size: 7px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.rivalCard header strong {
+  overflow: hidden;
+  color: #f0f4fa;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rivalCard header b {
+  color: #f7f9fc;
+  font-size: 23px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.rivalVisualRow {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 8px;
+}
+
+.trendOrb {
+  min-height: 50px;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 4px;
+  border: 1px solid #17212d;
+  border-radius: 8px;
+  background: #020304;
+  padding: 6px;
+}
+
+.trendOrb strong {
+  font-size: 25px;
+  line-height: 1;
+  text-align: center;
+}
+
+.trendOrb span {
+  color: #9aa7b7;
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.goodTrend,
+.goodTrend strong { color: #45d695 !important; }
+.badTrend,
+.badTrend strong { color: #ff6464 !important; }
+.warningTrend,
+.warningTrend strong { color: #e0ad45 !important; }
+.neutralTrend,
+.neutralTrend strong { color: #9aa7b7 !important; }
+
+.rivalData {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.rivalData > div {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  border: 1px solid #151f2a;
+  border-radius: 8px;
+  background: #020304;
+  padding: 6px;
+}
+
+.rivalData strong {
+  margin-top: 3px;
+  color: #dde5ef;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.rivalPressure {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.rivalPressure > div:first-child {
+  display: grid;
+  gap: 1px;
+}
+
+.rivalPressure strong {
+  color: #eef3f8;
+  font-size: 12px;
+}
+
+.rivalPressure small {
+  color: #6e7d91;
+  font-size: 7px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.forecastCard {
+  flex: 1 1 190px;
+  min-width: 0;
+  min-height: 170px;
+  border-radius: 10px;
+  padding: 10px;
+  overflow: hidden;
+}
+
+.forecastCard header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.forecastCard header > div:first-child {
+  display: grid;
+  gap: 1px;
+}
+
+.forecastCard header strong {
+  color: #edf2f8;
+  font-size: 12px;
+}
+
+.forecastLegend {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.forecastLegend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.forecastLegend i {
+  width: 12px;
+  height: 2px;
+  border-radius: 999px;
+}
+
+.aheadKey { background: #58a8ff; }
+.behindKey { background: #ff6464; }
+.drsKey { background: #e0ad45; }
+
+.forecastCard svg {
+  width: 100%;
+  height: calc(100% - 46px);
+  min-height: 118px;
+  margin-top: 5px;
+  overflow: visible;
+}
+
+.forecastTick {
+  stroke: #101821;
+  stroke-width: 1;
+}
+
+.drsLine {
+  stroke: #d6a442;
+  stroke-width: 1;
+  stroke-dasharray: 5 5;
+  vector-effect: non-scaling-stroke;
+}
+
+.aheadBand { fill: rgba(88, 168, 255, 0.09); }
+.behindBand { fill: rgba(255, 100, 100, 0.08); }
+
+.aheadLine,
+.behindLine {
+  fill: none;
+  stroke-width: 2.4;
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.aheadLine { stroke: #58a8ff; }
+.behindLine { stroke: #ff6464; }
+
+.forecastAxis {
+  display: flex;
+  justify-content: space-between;
+  color: #66758a;
+  font-size: 7px;
+  font-weight: 850;
+}
+
+.stalePanel .pressureCard,
+.stalePanel .rivals,
+.stalePanel .forecastCard {
+  opacity: 0.42;
+  filter: saturate(0.35);
+}
+
+@media (max-height: 900px) {
+  .panel {
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .stateHero,
+  .pressureCard {
+    min-height: 122px;
+  }
+
+  .stateHero {
+    grid-template-columns: 102px minmax(0, 1fr);
+    padding: 9px 11px;
+  }
+
+  .stateRing {
+    width: 94px;
+    height: 94px;
+  }
+
+  .stateRing strong {
+    font-size: 25px;
+  }
+
+  .rivalCard,
+  .rivalEmpty {
+    min-height: 112px;
+    padding: 8px;
+  }
+
+  .rivalVisualRow {
+    margin-top: 6px;
+  }
+
+  .rivalPressure {
+    margin-top: 6px;
+  }
+
+  .forecastCard {
+    min-height: 150px;
+    padding: 8px;
+  }
+
+  .forecastCard svg {
+    min-height: 100px;
+  }
+}
+
+@media (max-width: 1180px) {
+  .heroGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .pressureCard {
+    min-height: 108px;
+  }
+}
+
+@media (max-width: 720px) {
+  .stateHero {
+    grid-template-columns: 94px minmax(0, 1fr);
+  }
+
+  .stateRing {
+    width: 88px;
+    height: 88px;
+  }
+
+  .rivals {
+    grid-template-columns: 1fr;
+  }
+
+  .forecastLegend {
+    gap: 5px;
+  }
+}
+
+/* Large desktop density for a readable 100% browser-zoom race view. */
+@media (min-width: 1501px) and (min-height: 700px) {
+  .panel {
+    padding: 11px;
+    gap: 9px;
+    border-radius: 11px;
+  }
+
+  .header {
+    gap: 14px;
+  }
+
+  .header span {
+    font-size: 9px;
+  }
+
+  .header strong {
+    font-size: 17px;
+  }
+
+  .qualityPill {
+    min-width: 105px;
+    gap: 10px;
+    padding: 6px 11px;
+  }
+
+  .qualityPill span {
+    font-size: 8px;
+  }
+
+  .qualityPill b {
+    font-size: 14px;
+  }
+
+  .error {
+    padding: 8px 10px;
+    font-size: 10px;
+  }
+
+  .heroGrid {
+    grid-template-columns: minmax(0, 1.55fr) minmax(250px, 0.78fr);
+    gap: 9px;
+  }
+
+  .stateHero,
+  .pressureCard {
+    min-height: 160px;
+    border-radius: 11px;
+  }
+
+  .stateHero {
+    grid-template-columns: 136px minmax(0, 1fr);
+    gap: 16px;
+    padding: 12px 15px;
+  }
+
+  .stateRing {
+    width: 126px;
+    height: 126px;
+  }
+
+  .ringTrack,
+  .ringValue {
+    stroke-width: 8.5;
+  }
+
+  .stateRing strong {
+    font-size: 34px;
+  }
+
+  .stateRing span {
+    margin-top: 6px;
+    font-size: 11px;
+  }
+
+  .stateCopy > span {
+    font-size: 11px;
+  }
+
+  .stateCopy > strong {
+    margin-top: 4px;
+    font-size: clamp(32px, 2.2vw, 44px);
+  }
+
+  .stateCopy p {
+    margin-top: 8px;
+    font-size: 12px;
+  }
+
+  .targetMeta {
+    margin-top: 10px;
+    gap: 12px;
+  }
+
+  .targetMeta b {
+    font-size: 21px;
+  }
+
+  .targetMeta small {
+    font-size: 10px;
+  }
+
+  .pressureCard {
+    padding: 15px;
+    gap: 12px;
+  }
+
+  .pressureNumber span,
+  .pressureMetrics span,
+  .rivalData span,
+  .rivalPressure span,
+  .forecastCard header span {
+    font-size: 9px;
+  }
+
+  .pressureNumber strong {
+    font-size: 43px;
+  }
+
+  .metricRail {
+    height: 9px;
+  }
+
+  .pressureMetrics {
+    gap: 6px;
+  }
+
+  .pressureMetrics > div {
+    border-radius: 8px;
+    padding: 8px;
+  }
+
+  .pressureMetrics strong {
+    margin-top: 3px;
+    font-size: 15px;
+  }
+
+  .rivals {
+    gap: 9px;
+  }
+
+  .rivalCard,
+  .rivalEmpty {
+    min-height: 145px;
+    border-radius: 11px;
+    padding: 11px;
+  }
+
+  .rivalEmpty span {
+    font-size: 9px;
+  }
+
+  .rivalEmpty strong {
+    font-size: 18px;
+  }
+
+  .rivalEmpty i {
+    font-size: 28px;
+  }
+
+  .rivalCard header span {
+    font-size: 9px;
+  }
+
+  .rivalCard header strong {
+    font-size: 17px;
+  }
+
+  .rivalCard header b {
+    font-size: 28px;
+  }
+
+  .rivalVisualRow {
+    margin-top: 9px;
+    grid-template-columns: 126px minmax(0, 1fr);
+    gap: 9px;
+  }
+
+  .trendOrb {
+    min-height: 58px;
+    grid-template-columns: 39px minmax(0, 1fr);
+    gap: 5px;
+    border-radius: 9px;
+    padding: 7px;
+  }
+
+  .trendOrb strong {
+    font-size: 30px;
+  }
+
+  .trendOrb span {
+    font-size: 10px;
+  }
+
+  .rivalData {
+    gap: 6px;
+  }
+
+  .rivalData > div {
+    border-radius: 9px;
+    padding: 8px;
+  }
+
+  .rivalData strong {
+    margin-top: 4px;
+    font-size: 15px;
+  }
+
+  .rivalPressure {
+    margin-top: 9px;
+    gap: 9px;
+  }
+
+  .rivalPressure strong {
+    font-size: 15px;
+  }
+
+  .rivalPressure small {
+    font-size: 9px;
+  }
+
+  .forecastCard {
+    flex-basis: 220px;
+    min-height: 190px;
+    border-radius: 11px;
+    padding: 11px;
+  }
+
+  .forecastCard header strong {
+    font-size: 15px;
+  }
+
+  .forecastLegend {
+    gap: 11px;
+  }
+
+  .forecastLegend i {
+    width: 14px;
+  }
+
+  .forecastCard svg {
+    height: calc(100% - 53px);
+    min-height: 135px;
+    margin-top: 6px;
+  }
+
+  .forecastAxis {
+    font-size: 9px;
+  }
+}

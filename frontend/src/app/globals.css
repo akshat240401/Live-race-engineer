@@ -13,6 +13,8 @@
   --red: #ff5252;
   --blue: #4da3ff;
   --radius: 8px;
+  --right-rail: clamp(430px, 29vw, 500px);
+  --visual-height: clamp(300px, 39vh, 350px);
 }
 
 * {
@@ -22,35 +24,50 @@
 html,
 body {
   margin: 0;
+  width: 100%;
   height: 100%;
   background: var(--bg);
   color: var(--text);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
   overflow: hidden;
 }
 
-button {
+button,
+input {
   font: inherit;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
 }
 
 .race-shell {
   width: 100vw;
-  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
   overflow: hidden;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   gap: 7px;
-  padding: 7px;
+  padding: 6px;
   background:
     radial-gradient(circle at top left, rgba(77, 163, 255, 0.08), transparent 28vw),
     var(--bg);
 }
 
 .race-topbar {
+  min-width: 0;
   min-height: 62px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(420px, 510px);
-  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) minmax(420px, 520px);
+  gap: 8px;
   align-items: stretch;
 }
 
@@ -65,62 +82,83 @@ button {
 }
 
 .topbar-left {
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 8px 10px;
+  gap: 14px;
+  padding: 7px 10px;
+}
+
+.brand-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
   min-width: 0;
 }
 
 .brand-line h1 {
   margin: 0;
-  font-size: 19px;
+  font-size: 18px;
   letter-spacing: -0.04em;
   line-height: 1;
+  white-space: nowrap;
 }
 
-.brand-line span {
+.brand-line > span {
   display: block;
   margin-top: 4px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   font-weight: 800;
 }
 
+.reports-link {
+  color: var(--blue);
+  font-size: 11px;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.reports-link:hover {
+  text-decoration: underline;
+}
+
 .topbar-status {
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .status-chip {
-  height: 30px;
+  height: 28px;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 0 9px;
+  gap: 6px;
+  padding: 0 8px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 850;
   letter-spacing: 0.08em;
 }
 
 .status-chip strong {
   color: var(--text);
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .chip-dot,
 .dot,
 .live-dot,
 .status-dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 999px;
   display: inline-block;
   background: var(--faint);
@@ -130,17 +168,17 @@ button {
 .dot.green,
 .live-dot.on {
   background: var(--green);
-  box-shadow: 0 0 14px rgba(42, 211, 107, 0.4);
+  box-shadow: 0 0 12px rgba(42, 211, 107, 0.38);
 }
 
 .dot.amber {
   background: var(--amber);
-  box-shadow: 0 0 14px rgba(215, 166, 74, 0.35);
+  box-shadow: 0 0 12px rgba(215, 166, 74, 0.32);
 }
 
 .dot.red {
   background: var(--red);
-  box-shadow: 0 0 14px rgba(255, 82, 82, 0.35);
+  box-shadow: 0 0 12px rgba(255, 82, 82, 0.32);
 }
 
 .dot.neutral {
@@ -163,29 +201,28 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 7px;
+  gap: 8px;
+  margin-bottom: 6px;
 }
 
 .race-controls .controls-title {
   margin: 0;
-  font-size: 13px;
+  font-size: 12px;
   letter-spacing: -0.02em;
 }
 
 .race-controls .mini-status-row {
   display: flex;
-  flex-direction: row;
-  gap: 6px;
+  gap: 5px;
 }
 
 .race-controls .mini-status,
 .state {
-  padding: 3px 7px;
+  padding: 3px 6px;
   border-radius: 999px;
   border: 1px solid var(--line);
   color: var(--muted);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 850;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -212,22 +249,23 @@ button {
 .race-controls .controls-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
+  gap: 5px;
 }
 
 .control-btn {
+  min-width: 0;
   min-height: 30px;
   border: 1px solid var(--line);
   background: var(--panel-soft);
   color: var(--text);
   border-radius: var(--radius);
-  padding: 6px 8px;
+  padding: 6px 7px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  font-size: 12px;
+  gap: 5px;
+  font-size: 11px;
   font-weight: 800;
 }
 
@@ -270,9 +308,9 @@ button {
   margin-top: 6px;
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .notice-dot {
@@ -287,28 +325,55 @@ button {
 }
 
 .race-content {
-  min-height: 0;
   min-width: 0;
+  min-height: 0;
   overflow: hidden;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 390px;
-  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) var(--right-rail);
+  gap: 8px;
 }
 
 .primary-column {
-  min-height: 0;
   min-width: 0;
-  overflow: hidden;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
-  gap: 8px;
+  grid-template-rows: auto auto auto;
+  align-content: start;
+  gap: 7px;
+  padding-right: 2px;
+  scrollbar-width: thin;
+}
+
+.primary-column::-webkit-scrollbar,
+.side-column::-webkit-scrollbar,
+.chart-scroll::-webkit-scrollbar,
+.race-radio .radio-list::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.primary-column::-webkit-scrollbar-thumb,
+.side-column::-webkit-scrollbar-thumb,
+.chart-scroll::-webkit-scrollbar-thumb,
+.race-radio .radio-list::-webkit-scrollbar-thumb {
+  background: #3b4656;
+  border-radius: 999px;
+}
+
+.primary-column::-webkit-scrollbar-track,
+.side-column::-webkit-scrollbar-track,
+.chart-scroll::-webkit-scrollbar-track,
+.race-radio .radio-list::-webkit-scrollbar-track {
+  background: #111720;
 }
 
 .driver-strip {
   min-width: 0;
   display: grid;
-  grid-template-columns: 1.2fr 0.82fr repeat(6, minmax(82px, 1fr));
-  gap: 7px;
+  grid-template-columns: 1.25fr 0.85fr repeat(6, minmax(78px, 1fr));
+  gap: 6px;
 }
 
 .speed-box,
@@ -317,7 +382,7 @@ button {
   border: 1px solid var(--line-soft);
   background: var(--panel);
   border-radius: var(--radius);
-  padding: 8px 10px;
+  padding: 7px 9px;
   position: relative;
   overflow: hidden;
 }
@@ -327,7 +392,7 @@ button {
 .small-stat span {
   display: block;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 9px;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   font-weight: 850;
@@ -337,7 +402,7 @@ button {
 .gear-box strong {
   display: block;
   margin-top: 2px;
-  font-size: clamp(34px, 3.4vw, 54px);
+  font-size: clamp(34px, 3.2vw, 50px);
   line-height: 0.9;
   letter-spacing: -0.08em;
   font-variant-numeric: tabular-nums;
@@ -353,21 +418,54 @@ button {
   display: block;
   margin-top: 4px;
   color: var(--faint);
-  font-size: 11px;
+  font-size: 10px;
   font-variant-numeric: tabular-nums;
+}
+
+.position-badge {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(8, 12, 18, 0.86);
+  padding: 4px 6px;
+}
+
+.position-badge strong {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.position-badge span {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.position-badge.good strong {
+  color: var(--green);
+}
+
+.position-badge.danger strong {
+  color: var(--red);
 }
 
 .small-stat {
   min-width: 0;
-  padding: 7px;
+  padding: 6px 7px;
   overflow: hidden;
 }
 
 .small-stat strong {
   display: block;
-  margin-top: 7px;
+  margin-top: 6px;
   color: var(--text);
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1;
   font-weight: 850;
   letter-spacing: -0.04em;
@@ -390,18 +488,18 @@ button {
 }
 
 .lap-progress.compact {
-  height: 14px;
+  height: 13px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 74px;
+  grid-template-columns: minmax(0, 1fr) 68px;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 10px;
   font-variant-numeric: tabular-nums;
 }
 
 .lap-progress-bar {
-  height: 8px;
+  height: 7px;
   background: #252d38;
   border-radius: 999px;
   overflow: hidden;
@@ -413,14 +511,14 @@ button {
 }
 
 .race-main-grid {
-  min-height: 0;
   min-width: 0;
-  height: 100%;
-  overflow: hidden;
+  min-height: 0;
+  height: var(--visual-height);
   display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  gap: 8px;
   align-items: stretch;
-  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
-  gap: 10px;
+  overflow: hidden;
 }
 
 .race-map,
@@ -428,22 +526,30 @@ button {
 .race-radio,
 .race-inputs,
 .race-tyres {
-  min-height: 0;
   min-width: 0;
+  min-height: 0;
 }
 
 .race-map .panel,
-.race-chart .panel,
-.race-radio .panel,
-.race-inputs .panel,
-.race-tyres .panel,
-.compact-status-panel {
+.race-chart .panel {
   height: 100%;
   min-height: 0;
 }
 
+.race-radio .panel {
+  height: clamp(210px, 25vh, 250px);
+  min-height: 190px;
+}
+
+.race-inputs .panel,
+.race-tyres .panel,
+.compact-status-panel {
+  height: auto;
+  min-height: 0;
+}
+
 .panel {
-  padding: 10px;
+  padding: 9px;
   min-width: 0;
   overflow: hidden;
 }
@@ -451,7 +557,7 @@ button {
 .panel h3,
 .controls-title {
   margin: 0;
-  font-size: 13px;
+  font-size: 12px;
   letter-spacing: -0.02em;
 }
 
@@ -460,8 +566,8 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 8px;
+  gap: 8px;
+  margin-bottom: 7px;
 }
 
 .chart-canvas,
@@ -473,15 +579,8 @@ button {
   border-radius: var(--radius);
 }
 
-.race-map .panel,
-.race-chart .panel {
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
-}
-
 .race-map .track-canvas {
-  height: calc(100% - 30px);
+  height: calc(100% - 28px);
   min-height: 0;
   max-height: none;
 }
@@ -497,15 +596,15 @@ button {
 
 .telemetry-panel .panel-heading {
   flex: 0 0 auto;
-  margin-bottom: 8px;
 }
 
 .chart-meta {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 9px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-weight: 850;
+  white-space: nowrap;
 }
 
 .chart-scroll {
@@ -539,49 +638,27 @@ button {
   margin: 0;
 }
 
-.chart-scroll::-webkit-scrollbar,
-.race-radio .radio-list::-webkit-scrollbar,
-.side-column::-webkit-scrollbar {
-  height: 8px;
-  width: 8px;
-}
-
-.chart-scroll::-webkit-scrollbar-thumb,
-.race-radio .radio-list::-webkit-scrollbar-thumb,
-.side-column::-webkit-scrollbar-thumb {
-  background: #3b4656;
-  border-radius: 999px;
-}
-
-.chart-scroll::-webkit-scrollbar-track,
-.race-radio .radio-list::-webkit-scrollbar-track,
-.side-column::-webkit-scrollbar-track {
-  background: #111720;
-}
-
 .side-column {
-  min-height: 0;
   min-width: 0;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-right: 2px;
-  display: grid;
-  grid-template-rows: minmax(170px, 1fr) 108px 146px 190px;
-  gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding-right: 3px;
   scrollbar-width: thin;
+  overscroll-behavior: contain;
 }
 
 .side-column > * {
-  min-height: 0;
-}
-
-.race-radio .panel {
-  overflow: hidden;
+  flex: 0 0 auto;
+  min-width: 0;
 }
 
 .race-radio .radio-list {
   max-height: none;
-  height: calc(100% - 32px);
+  height: calc(100% - 30px);
   overflow: auto;
   padding-right: 3px;
 }
@@ -589,7 +666,7 @@ button {
 .radio-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
   max-height: 320px;
   overflow: auto;
   padding-right: 3px;
@@ -620,40 +697,28 @@ button {
   color: var(--faint);
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 850;
 }
 
 .radio-title {
   margin-top: 3px;
   font-weight: 850;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .radio-body {
   margin-top: 4px;
   color: #cbd5e2;
-  font-size: 11.5px;
-  line-height: 1.22;
+  font-size: 11px;
+  line-height: 1.28;
 }
 
 .radio-category {
-  margin-top: 6px;
-}
-
-.compact-inputs-panel {
-  padding: 9px;
-}
-
-.compact-inputs-panel h3 {
-  margin-bottom: 5px;
+  margin-top: 5px;
 }
 
 .input-row {
-  margin-top: 7px;
-}
-
-.compact-input-row {
   margin-top: 6px;
 }
 
@@ -661,8 +726,8 @@ button {
   display: flex;
   justify-content: space-between;
   color: var(--muted);
-  font-size: 11px;
-  margin-bottom: 4px;
+  font-size: 10px;
+  margin-bottom: 3px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -718,21 +783,21 @@ button {
 
 .tyre-age {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 10px;
   margin-bottom: 6px;
 }
 
 .compound {
   color: var(--amber);
   font-weight: 850;
-  font-size: 11px;
+  font-size: 10px;
   letter-spacing: 0.08em;
 }
 
 .tyre-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
 }
 
 .tyre-box {
@@ -753,51 +818,43 @@ button {
 
 .tyre-name {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .tyre-wear {
   margin-top: 3px;
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 850;
   font-variant-numeric: tabular-nums;
 }
 
 .tyre-temp {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 9px;
   margin-top: 2px;
 }
 
-.compact-status-panel {
-  padding: 8px;
-  overflow: hidden;
-}
-
 .compact-status-panel .panel-heading {
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
 
 .compact-status-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 5px;
+  gap: 4px;
 }
 
 .compact-status-grid .small-stat {
-  padding: 5px 6px;
-  min-height: 39px;
-}
-
-.compact-status-grid .small-stat span {
-  font-size: 8.5px;
-  letter-spacing: 0.1em;
+  padding: 5px;
 }
 
 .compact-status-grid .small-stat strong {
-  margin-top: 3px;
+  margin-top: 4px;
   font-size: 12px;
-  line-height: 1;
+}
+
+.compact-status-grid .small-stat span {
+  font-size: 8px;
 }
 
 .side-error,
@@ -807,206 +864,87 @@ button {
   color: #ffd1d1;
   border-radius: var(--radius);
   padding: 7px;
-  font-size: 12px;
+  font-size: 11px;
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-@media (max-height: 920px) {
-  .race-shell {
-    padding: 6px;
-    gap: 6px;
+@media (max-width: 1500px) {
+  :root {
+    --right-rail: clamp(405px, 30vw, 455px);
+    --visual-height: clamp(290px, 38vh, 335px);
   }
 
   .race-topbar {
-    min-height: 58px;
-  }
-
-  .race-controls .controls-panel {
-    padding: 7px;
-  }
-
-  .race-controls .controls-head {
-    margin-bottom: 6px;
-  }
-
-  .control-btn {
-    min-height: 29px;
-    padding: 6px 7px;
-    font-size: 11px;
+    grid-template-columns: minmax(0, 1fr) minmax(400px, 470px);
   }
 
   .driver-strip {
-    gap: 6px;
-  }
-
-  .speed-box,
-  .gear-box,
-  .small-stat {
-    padding: 7px;
-  }
-
-  .speed-box strong,
-  .gear-box strong {
-    font-size: clamp(32px, 3.2vw, 48px);
-  }
-
-  .small-stat strong {
-    font-size: 16px;
-  }
-
-  .side-column {
-    grid-template-rows: minmax(145px, 1fr) 104px 134px 178px;
-    gap: 7px;
-  }
-
-  .radio-message {
-    padding: 7px;
-  }
-
-  .radio-body {
-    font-size: 11px;
-    line-height: 1.18;
-  }
-
-  .compact-inputs-panel {
-    padding: 8px;
-  }
-
-  .compact-input-row {
-    margin-top: 5px;
-  }
-
-  .input-bar {
-    height: 8px;
-  }
-
-  .steer-track {
-    height: 12px;
-  }
-
-  .tyre-age {
-    margin-bottom: 5px;
-  }
-
-  .tyre-box {
-    padding: 5px;
-  }
-
-  .tyre-wear {
-    font-size: 16px;
-  }
-
-  .compact-status-panel {
-    padding: 7px;
-  }
-
-  .compact-status-grid {
-    gap: 4px;
-  }
-
-  .compact-status-grid .small-stat {
-    min-height: 36px;
-    padding: 5px;
-  }
-
-  .compact-status-grid .small-stat strong {
-    font-size: 11.5px;
+    grid-template-columns: 1.18fr 0.82fr repeat(6, minmax(70px, 1fr));
   }
 }
 
-@media (max-height: 780px) {
-  .race-topbar {
-    min-height: 54px;
-  }
-
-  .brand-line h1 {
-    font-size: 17px;
-  }
-
-  .brand-line span {
-    font-size: 10px;
-  }
-
-  .status-chip {
-    height: 26px;
-    font-size: 10px;
-  }
-
-  .driver-strip {
-    grid-template-columns: 1.1fr 0.75fr repeat(6, minmax(74px, 1fr));
-  }
-
-  .speed-box strong,
-  .gear-box strong {
-    font-size: clamp(28px, 2.9vw, 42px);
-  }
-
-  .side-column {
-    grid-template-rows: minmax(120px, 1fr) 98px 126px 166px;
-  }
-}
-
-@media (max-width: 1320px) {
+@media (max-width: 1220px) {
   html,
   body {
     overflow: auto;
   }
 
   .race-shell {
+    width: 100%;
     height: auto;
     min-height: 100vh;
     overflow: visible;
   }
 
-  .race-topbar {
+  .race-topbar,
+  .race-content {
     grid-template-columns: 1fr;
   }
 
   .race-content {
-    grid-template-columns: 1fr;
     overflow: visible;
   }
 
-  .primary-column {
+  .primary-column,
+  .side-column {
     overflow: visible;
+    padding-right: 0;
   }
 
   .race-main-grid {
-    height: 620px;
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .side-column {
-    overflow: visible;
-    grid-template-rows: auto;
-  }
-
-  .race-radio .panel,
-  .race-inputs .panel,
-  .race-tyres .panel,
-  .compact-status-panel {
-    height: auto;
-  }
-
-  .race-radio .radio-list {
-    height: 260px;
+    height: 340px;
   }
 
   .driver-strip {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
+
+  .side-column {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+
+  .side-column > :first-child,
+  .side-column > :nth-child(2) {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 780px) {
   .race-shell {
-    padding: 8px;
+    padding: 7px;
   }
 
   .topbar-left {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .topbar-status {
+    justify-content: flex-start;
   }
 
   .race-controls .controls-grid {
@@ -1015,684 +953,27 @@ button {
 
   .driver-strip,
   .race-main-grid,
+  .side-column,
   .compact-status-grid {
     grid-template-columns: 1fr;
   }
 
   .race-main-grid {
     height: auto;
+    overflow: visible;
   }
 
-  .race-map .track-canvas,
-  .chart-scroll {
-    height: 320px;
+  .race-map .panel,
+  .race-chart .panel {
+    height: 310px;
   }
 
   .tyre-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .speed-box strong,
   .gear-box strong {
-    font-size: 46px;
-  }
-}
-
-/* -------------------------------------------------------
-   FIX: stop Driver inputs panel from getting cut off
-   ------------------------------------------------------- */
-
-.side-column {
-  grid-template-rows: minmax(120px, 1fr) 138px 132px 174px !important;
-}
-
-.race-inputs {
-  min-height: 138px !important;
-}
-
-.race-inputs .panel,
-.compact-inputs-panel {
-  height: 138px !important;
-  min-height: 138px !important;
-  overflow: hidden !important;
-}
-
-.compact-inputs-panel {
-  padding: 8px 9px !important;
-}
-
-.compact-inputs-panel h3 {
-  margin: 0 0 5px 0 !important;
-  font-size: 13px !important;
-  line-height: 1 !important;
-}
-
-.compact-input-row,
-.input-row {
-  margin-top: 5px !important;
-}
-
-.input-head {
-  margin-bottom: 3px !important;
-  font-size: 10.5px !important;
-  line-height: 1.1 !important;
-}
-
-.input-bar {
-  height: 8px !important;
-}
-
-.steer-track {
-  height: 12px !important;
-  margin-bottom: 0 !important;
-}
-
-.steer-pin {
-  width: 11px !important;
-  height: 11px !important;
-}
-
-/* Keep the right column fitting inside the race dashboard */
-.race-tyres {
-  min-height: 132px !important;
-}
-
-.race-tyres .panel {
-  height: 132px !important;
-  min-height: 132px !important;
-}
-
-.compact-status-panel {
-  height: 174px !important;
-  min-height: 174px !important;
-}
-
-/* Smaller screens: still keep driver inputs visible */
-@media (max-height: 920px) {
-  .side-column {
-    grid-template-rows: minmax(110px, 1fr) 134px 126px 168px !important;
-  }
-
-  .race-inputs,
-  .race-inputs .panel,
-  .compact-inputs-panel {
-    height: 134px !important;
-    min-height: 134px !important;
-  }
-
-  .race-tyres,
-  .race-tyres .panel {
-    height: 126px !important;
-    min-height: 126px !important;
-  }
-
-  .compact-status-panel {
-    height: 168px !important;
-    min-height: 168px !important;
-  }
-}
-
-@media (max-height: 780px) {
-  .side-column {
-    grid-template-rows: minmax(95px, 1fr) 128px 118px 158px !important;
-  }
-
-  .race-inputs,
-  .race-inputs .panel,
-  .compact-inputs-panel {
-    height: 128px !important;
-    min-height: 128px !important;
-  }
-
-  .input-head {
-    font-size: 10px !important;
-  }
-
-  .input-bar {
-    height: 7px !important;
-  }
-
-  .steer-track {
-    height: 11px !important;
-  }
-
-  .race-tyres,
-  .race-tyres .panel {
-    height: 118px !important;
-    min-height: 118px !important;
-  }
-
-  .compact-status-panel {
-    height: 158px !important;
-    min-height: 158px !important;
-  }
-}
-
-/* =========================================================
-   POSITION, EVENT FEED, AND REPORTS
-   ========================================================= */
-
-.position-badge {
-  position: absolute;
-  top: 7px;
-  right: 8px;
-  display: inline-flex;
-  align-items: baseline;
-  gap: 2px;
-  padding: 4px 7px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: rgba(7, 8, 10, 0.82);
-  color: var(--text);
-  font-variant-numeric: tabular-nums;
-}
-
-.position-badge strong {
-  margin: 0;
-  font-size: 19px;
-  line-height: 1;
-  letter-spacing: -0.04em;
-}
-
-.position-badge span {
-  color: var(--muted);
-  font-size: 10px;
-}
-
-.position-badge.good {
-  color: var(--green);
-  border-color: rgba(42, 211, 107, 0.4);
-}
-
-.position-badge.danger {
-  color: var(--red);
-  border-color: rgba(255, 82, 82, 0.4);
-}
-
-.brand-title-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.reports-link,
-.reports-back {
-  color: var(--blue);
-  text-decoration: none;
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.reports-link:hover,
-.reports-back:hover {
-  text-decoration: underline;
-}
-
-.feed-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.feed-header h2 {
-  margin: 0;
-  font-size: 13px;
-}
-
-.feed-tabs {
-  display: inline-flex;
-  gap: 4px;
-  padding: 3px;
-  border: 1px solid var(--line-soft);
-  border-radius: 7px;
-  background: var(--panel-deep);
-}
-
-.feed-tabs button {
-  border: 0;
-  border-radius: 5px;
-  background: transparent;
-  color: var(--muted);
-  padding: 4px 7px;
-  cursor: pointer;
-  font-size: 9px;
-  font-weight: 850;
-  text-transform: uppercase;
-}
-
-.feed-tabs button.active {
-  background: var(--panel-soft);
-  color: var(--text);
-}
-
-.timeline-meta {
-  display: flex;
-  justify-content: space-between;
-  color: var(--faint);
-  font-size: 9px;
-  font-weight: 800;
-  text-transform: uppercase;
-}
-
-.reports-shell {
-  width: 100vw;
-  height: 100vh;
-  overflow: auto;
-  padding: 18px;
-  background: var(--bg);
-  color: var(--text);
-}
-
-.reports-header {
-  max-width: 1680px;
-  margin: 0 auto 14px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 18px;
-}
-
-.reports-header h1 {
-  margin: 7px 0 4px;
-  font-size: clamp(26px, 3vw, 42px);
-  letter-spacing: -0.055em;
-}
-
-.reports-header p,
-.report-section-title p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.reports-header button,
-.report-toolbar button,
-.ai-query-row button {
-  min-height: 36px;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  background: var(--panel-soft);
-  color: var(--text);
-  padding: 8px 12px;
-  cursor: pointer;
-  font-weight: 800;
-}
-
-.reports-layout {
-  max-width: 1680px;
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: 285px minmax(0, 1fr);
-  gap: 12px;
-  align-items: start;
-}
-
-.session-list {
-  position: sticky;
-  top: 0;
-  max-height: calc(100vh - 130px);
-  display: flex;
-  flex-direction: column;
-}
-
-.report-section-title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
-.report-section-title h2,
-.report-list-card h2,
-.comparison-card h2 {
-  margin: 0;
-  font-size: 15px;
-}
-
-.report-section-title > span {
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 850;
-  text-transform: uppercase;
-}
-
-.session-scroll {
-  min-height: 0;
-  overflow: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
-
-.session-item {
-  width: 100%;
-  border: 1px solid var(--line-soft);
-  border-radius: 7px;
-  background: var(--panel-deep);
-  color: var(--text);
-  padding: 9px;
-  text-align: left;
-  cursor: pointer;
-}
-
-.session-item:hover,
-.session-item.active {
-  border-color: var(--blue);
-}
-
-.session-item.active {
-  background: rgba(77, 163, 255, 0.08);
-}
-
-.session-item strong,
-.session-item span,
-.session-item small {
-  display: block;
-}
-
-.session-item span,
-.session-item small {
-  margin-top: 4px;
-  color: var(--muted);
-  font-size: 10px;
-}
-
-.report-content {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.report-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.report-toolbar strong,
-.report-toolbar span {
-  display: block;
-}
-
-.report-toolbar span {
-  margin-top: 3px;
-  color: var(--muted);
-  font-size: 11px;
-}
-
-.report-summary-grid {
-  display: grid;
-  grid-template-columns: repeat(
-    8,
-    minmax(0, 1fr)
-  );
-  gap: 7px;
-}
-
-.report-stat {
-  min-width: 0;
-  padding: 10px;
-}
-
-.report-stat span {
-  color: var(--muted);
-  font-size: 9px;
-  font-weight: 850;
-  text-transform: uppercase;
-}
-
-.report-stat strong {
-  display: block;
-  margin-top: 7px;
-  overflow: hidden;
-  font-size: 19px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.report-two-column {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.report-list-card ul {
-  margin: 10px 0 0;
-  padding-left: 18px;
-  color: #cbd5e2;
-}
-
-.report-list-card li {
-  margin: 7px 0;
-  line-height: 1.4;
-}
-
-.report-table-scroll {
-  width: 100%;
-  overflow-x: auto;
-}
-
-.report-table-card table {
-  width: 100%;
-  min-width: 720px;
-  border-collapse: collapse;
-  font-variant-numeric: tabular-nums;
-}
-
-.report-table-card th,
-.report-table-card td {
-  padding: 8px 9px;
-  border-bottom: 1px solid var(--line-soft);
-  text-align: left;
-  font-size: 11px;
-}
-
-.report-table-card th {
-  color: var(--muted);
-  font-size: 9px;
-  text-transform: uppercase;
-}
-
-.report-lower-grid {
-  grid-template-columns:
-    minmax(0, 1.4fr)
-    minmax(260px, 0.6fr);
-}
-
-.report-event-scroll {
-  max-height: 430px;
-  overflow: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
-
-.report-event {
-  border: 1px solid var(--line-soft);
-  border-left: 4px solid var(--blue);
-  border-radius: 7px;
-  background: var(--panel-deep);
-  padding: 9px;
-}
-
-.report-event.warning {
-  border-left-color: var(--amber);
-}
-
-.report-event.danger {
-  border-left-color: var(--red);
-}
-
-.report-event.success {
-  border-left-color: var(--green);
-}
-
-.report-event-meta {
-  display: flex;
-  justify-content: space-between;
-  color: var(--faint);
-  font-size: 9px;
-  text-transform: uppercase;
-}
-
-.report-event strong {
-  display: block;
-  margin-top: 5px;
-  font-size: 12px;
-}
-
-.report-event p {
-  margin: 4px 0 0;
-  color: var(--muted);
-  font-size: 11px;
-}
-
-.comparison-card {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
-
-.comparison-row {
-  display: grid;
-  grid-template-columns:
-    62px minmax(0, 1fr) 40px;
-  gap: 7px;
-  align-items: center;
-  padding: 8px;
-  border: 1px solid var(--line-soft);
-  border-radius: 7px;
-  background: var(--panel-deep);
-}
-
-.comparison-row.player {
-  border-color: rgba(42, 211, 107, 0.45);
-  background: rgba(42, 211, 107, 0.06);
-}
-
-.comparison-row span,
-.comparison-row small {
-  color: var(--muted);
-  font-size: 9px;
-  text-transform: uppercase;
-}
-
-.comparison-row strong {
-  overflow: hidden;
-  font-size: 12px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.ai-query-row {
-  display: grid;
-  grid-template-columns:
-    minmax(0, 1fr) auto;
-  gap: 8px;
-  margin: 12px 0;
-}
-
-.ai-query-row input {
-  min-width: 0;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  background: var(--panel-deep);
-  color: var(--text);
-  padding: 9px 11px;
-  outline: none;
-}
-
-.ai-narrative {
-  margin: 10px 0;
-  border: 1px solid var(--line-soft);
-  border-radius: 8px;
-  background: var(--panel-deep);
-  color: #d6dee8;
-  padding: 14px;
-  font: inherit;
-  font-size: 12px;
-  line-height: 1.55;
-  white-space: pre-wrap;
-}
-
-.report-warning {
-  border: 1px solid
-    rgba(215, 166, 74, 0.4);
-  border-radius: 7px;
-  background: rgba(215, 166, 74, 0.08);
-  color: #f0d9a6;
-  padding: 9px;
-  font-size: 11px;
-}
-
-.retrieved-context {
-  display: grid;
-  gap: 7px;
-  margin-top: 8px;
-}
-
-.retrieved-context > div {
-  border: 1px solid var(--line-soft);
-  border-radius: 7px;
-  background: var(--panel-deep);
-  padding: 8px;
-}
-
-.retrieved-context p,
-.report-muted {
-  color: var(--muted);
-  font-size: 11px;
-  line-height: 1.4;
-}
-
-@media (max-width: 1500px) {
-  .report-summary-grid {
-    grid-template-columns:
-      repeat(4, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 1180px) {
-  .reports-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .session-list {
-    position: static;
-    max-height: none;
-  }
-
-  .session-scroll {
-    max-height: 260px;
-  }
-
-  .report-two-column,
-  .report-lower-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 760px) {
-  .reports-shell {
-    padding: 10px;
-  }
-
-  .reports-header {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .report-summary-grid {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
-  }
-
-  .ai-query-row {
-    grid-template-columns: 1fr;
+    font-size: 44px;
   }
 }

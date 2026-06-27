@@ -4,6 +4,8 @@ import asyncio
 import json
 from typing import Any
 
+
+from app.intelligence.engine import AdaptiveBattleIntelligence
 from fastapi import (
     APIRouter,
     Body,
@@ -15,6 +17,7 @@ from fastapi import (
 )
 
 router = APIRouter()
+_battle_intelligence = AdaptiveBattleIntelligence()
 
 
 def runtime(request: Request):  # noqa: ANN201
@@ -55,6 +58,7 @@ def events(request: Request):
 
 @router.post("/api/reset")
 def reset(request: Request):
+    _battle_intelligence.reset()
     return runtime(request).reset()
 
 
@@ -93,6 +97,21 @@ def live_strategy(request: Request):
 @router.post("/api/strategy/recompute")
 def recompute_strategy(request: Request):
     return runtime(request).live_radio.decision(recompute=True)
+
+
+
+
+@router.get("/api/intelligence/live")
+def live_battle_intelligence(request: Request):
+    return _battle_intelligence.analyze(
+        runtime(request).state.snapshot()
+    ).to_dict()
+
+
+@router.post("/api/intelligence/reset")
+def reset_battle_intelligence():
+    _battle_intelligence.reset()
+    return {"ok": True}
 
 
 @router.get("/api/radio/transcript")
