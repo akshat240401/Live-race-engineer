@@ -75,6 +75,8 @@ class RaceEngineerRuntime:
 
     def _handle_packet(self, packet: ParsedPacket) -> None:
         snapshot = self.state.apply_packet(packet)
+        if not getattr(snapshot, "last_packet_accepted", True):
+            return
         messages = list(self.coach.analyze(snapshot))
         line = self.radio.select_line(messages)
 
@@ -128,7 +130,7 @@ class RaceEngineerRuntime:
     def reset(self) -> dict[str, Any]:
         snapshot = self.state.snapshot()
         metadata = self.recorder.finalize_current("manual_reset", snapshot)
-        self.state.reset()
+        self.state.hard_reset()
         self.radio.reset()
         self.live_radio.reset_conversation()
         return {

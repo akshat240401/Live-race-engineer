@@ -147,10 +147,95 @@ export type AudioInputDevice = {
   default_samplerate: number;
 };
 
+export type FieldFreshness = {
+  source_packet: string;
+  frame: number | null;
+  updated_at_unix_s: number;
+  age_s: number;
+  stale_after_s: number;
+  is_stale: boolean;
+};
+
+export type TelemetryLatency = {
+  latest: {
+    parse_ms: number;
+    queue_ms: number;
+    state_update_ms: number;
+    end_to_end_ms: number;
+  };
+  end_to_end_ema_ms: number;
+  end_to_end_p50_ms: number;
+  end_to_end_p95_ms: number;
+  end_to_end_p99_ms: number;
+  end_to_end_max_ms: number;
+  sample_count: number;
+};
+
+export type TelemetryDiagnostics = {
+  status: "waiting" | "warming_up" | "live" | "degraded" | "stale" | string;
+  connected: boolean;
+  session_uid: number | null;
+  session_generation: number;
+  session_started_at_unix_s: number | null;
+  session_age_s: number;
+  last_packet_age_s: number | null;
+  last_datagram_age_s: number | null;
+  latest_packet_kind: string | null;
+  latest_packet_frame: number | null;
+  latest_packet: {
+    kind: string | null;
+    frame: number | null;
+    received_at_unix_s: number | null;
+    processed_at_unix_s: number | null;
+  };
+  latest_rejection_reason: string | null;
+  counts: {
+    session_received: number;
+    session_accepted: number;
+    session_rejected: number;
+    duplicates: number;
+    out_of_order: number;
+    retired_session: number;
+    lifetime_received: number;
+    lifetime_accepted: number;
+    lifetime_rejected: number;
+  };
+  packet_rate_hz: number;
+  packet_rates_hz: Record<string, number>;
+  latency: TelemetryLatency;
+  ordering: {
+    last_frame_by_kind: Record<string, number>;
+    retired_session_uids: number[];
+  };
+  field_freshness: Record<string, FieldFreshness>;
+  group_freshness: Record<string, {
+    frame: number | null;
+    updated_at_unix_s: number;
+    age_s: number;
+    observed_interval_s: number;
+    stale_after_s: number;
+    is_stale: boolean;
+  }>;
+  stale_fields: string[];
+  stale_groups: string[];
+  missing_critical_groups: string[];
+  stale_critical_groups: string[];
+  generated_at_unix_s: number;
+};
+
 export type TelemetrySnapshot = {
   connected: boolean;
   packet_count: number;
   last_packet_age_s: number | null;
+
+  last_packet_accepted?: boolean;
+  last_packet_rejection_reason?: string | null;
+  telemetry_status?: TelemetryDiagnostics["status"];
+  session_generation?: number;
+  telemetry_diagnostics?: TelemetryDiagnostics;
+  field_freshness?: Record<string, FieldFreshness>;
+  stale_fields?: string[];
+  stale_groups?: string[];
   packet_format: number | null;
   game_year: number | null;
   session_uid: number | null;

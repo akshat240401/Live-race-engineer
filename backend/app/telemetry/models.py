@@ -83,6 +83,15 @@ class LiveTelemetrySnapshot:
     connected: bool = False
     packet_count: int = 0
     last_packet_age_s: float | None = None
+
+    last_packet_accepted: bool = True
+    last_packet_rejection_reason: str | None = None
+    telemetry_status: str = "waiting"
+    session_generation: int = 0
+    telemetry_diagnostics: dict[str, Any] = field(default_factory=dict)
+    field_freshness: dict[str, dict[str, Any]] = field(default_factory=dict)
+    stale_fields: list[str] = field(default_factory=list)
+    stale_groups: list[str] = field(default_factory=list)
     packet_format: int | None = None
     game_year: int | None = None
     session_uid: int | None = None

@@ -315,6 +315,14 @@ def analyze_session(
         raise HTTPException(status_code=500, detail=f"Analysis failed: {exc}") from exc
 
 
+@router.get("/api/telemetry/diagnostics")
+def telemetry_diagnostics(request: Request):
+    engineer = runtime(request)
+    return {
+        "state": engineer.state.diagnostics(),
+        "udp": engineer.udp.diagnostics(),
+    }
+
 @router.websocket("/ws/live")
 async def websocket_live(websocket: WebSocket):
     await websocket.accept()

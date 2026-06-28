@@ -3,11 +3,12 @@ from __future__ import annotations
 from collections import deque
 from copy import deepcopy
 from math import hypot, isfinite
-from threading import Lock
+from threading import RLock
 from time import time
 from typing import Any
 
 from app.f1.packets import ParsedPacket
+from app.telemetry.transport import TelemetryTransportDiagnostics
 from app.telemetry.models import (
     CarRaceState,
     EngineerMessage,
@@ -22,7 +23,8 @@ class LiveTelemetryState:
         self,
         history_limit: int = 9000,
     ) -> None:
-        self._lock = Lock()
+        self._lock = RLock()
+        self._transport = TelemetryTransportDiagnostics()
         self._snapshot = LiveTelemetrySnapshot()
 
         self._history: deque[dict[str, Any]] = deque(
@@ -64,26 +66,34 @@ class LiveTelemetryState:
         self._last_incident_ts = 0.0
         self._last_event_signature: dict[str, float] = {}
 
+    def _reset_domain_locked(self) -> None:
+        self._snapshot = LiveTelemetrySnapshot()
+        self._history.clear()
+        self._track_points.clear()
+        self._messages.clear()
+        self._race_events.clear()
+        self._completed_laps.clear()
+        self._participants.clear()
+        self._latest_lap_data.clear()
+        self._last_packet_ts = None
+        self._message_id = 0
+        self._event_id = 0
+        self._last_track_point = None
+        self._last_position = None
+        self._last_damage_total = 0
+        self._last_speed_sample = None
+        self._last_incident_ts = 0.0
+        self._last_event_signature.clear()
+
     def reset(self) -> None:
         with self._lock:
-            self._snapshot = LiveTelemetrySnapshot()
-            self._history.clear()
-            self._track_points.clear()
-            self._messages.clear()
-            self._race_events.clear()
-            self._completed_laps.clear()
-            self._participants.clear()
-            self._latest_lap_data.clear()
+            self._reset_domain_locked()
+    def hard_reset(self) -> None:
+        """Reset both domain and packet-transport state."""
+        with self._lock:
+            self._reset_domain_locked()
+            self._transport.reset_all()
 
-            self._last_packet_ts = None
-            self._message_id = 0
-            self._event_id = 0
-            self._last_track_point = None
-            self._last_position = None
-            self._last_damage_total = 0
-            self._last_speed_sample = None
-            self._last_incident_ts = 0.0
-            self._last_event_signature.clear()
 
     def set_recording_state(
         self,
@@ -128,6 +138,19 @@ class LiveTelemetryState:
         parsed: ParsedPacket,
     ) -> LiveTelemetrySnapshot:
         with self._lock:
+            decision = self._transport.begin(parsed)
+
+            if decision.new_session:
+                self._reset_domain_locked()
+
+            if not decision.accepted:
+                self._snapshot.last_packet_accepted = False
+                self._snapshot.last_packet_rejection_reason = (
+                    decision.reason
+                )
+                self._apply_transport_diagnostics_locked()
+                return self._copy_snapshot_locked()
+
             snapshot = self._snapshot
 
             snapshot.connected = True
@@ -425,6 +448,12 @@ class LiveTelemetryState:
 
             self._append_history_locked()
 
+            # TELEMETRY_PHASE1_FINALIZE
+            if decision.accepted:
+                self._snapshot.last_packet_accepted = True
+                self._snapshot.last_packet_rejection_reason = None
+                self._transport.finish(decision)
+            self._apply_transport_diagnostics_locked()
             return self._copy_snapshot_locked()
 
     def _apply_lap_data_locked(
@@ -1481,9 +1510,43 @@ class LiveTelemetryState:
             self._track_points
         )
 
+
+    def _apply_transport_diagnostics_locked(self) -> dict[str, Any]:
+        diagnostics = self._transport.snapshot()
+        snapshot = self._snapshot
+        snapshot.connected = bool(diagnostics["connected"])
+        snapshot.packet_count = int(
+            diagnostics["counts"]["session_accepted"]
+        )
+        snapshot.last_packet_age_s = diagnostics[
+            "last_packet_age_s"
+        ]
+        snapshot.telemetry_status = str(diagnostics["status"])
+        snapshot.session_generation = int(
+            diagnostics["session_generation"]
+        )
+        snapshot.telemetry_diagnostics = diagnostics
+        snapshot.field_freshness = dict(
+            diagnostics["field_freshness"]
+        )
+        snapshot.stale_fields = list(
+            diagnostics["stale_fields"]
+        )
+        snapshot.stale_groups = list(
+            diagnostics["stale_groups"]
+        )
+        return diagnostics
+
+    def diagnostics(self) -> dict[str, Any]:
+        with self._lock:
+            return deepcopy(
+                self._apply_transport_diagnostics_locked()
+            )
+
     def _copy_snapshot_locked(
         self,
     ) -> LiveTelemetrySnapshot:
+        self._apply_transport_diagnostics_locked()
         result = deepcopy(self._snapshot)
 
         result.history = list(self._history)
