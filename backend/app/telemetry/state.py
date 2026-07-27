@@ -65,6 +65,8 @@ class LiveTelemetryState:
         ] | None = None
         self._last_incident_ts = 0.0
         self._last_event_signature: dict[str, float] = {}
+        self._current_lap_invalid_seen = False
+        self._last_completed_lap_number = 0
 
     def _reset_domain_locked(self) -> None:
         self._snapshot = LiveTelemetrySnapshot()
@@ -456,6 +458,127 @@ class LiveTelemetryState:
             self._apply_transport_diagnostics_locked()
             return self._copy_snapshot_locked()
 
+    def _safe_int_locked(
+        self,
+        value: Any,
+        fallback: int = 0,
+    ) -> int:
+        try:
+            return int(value)
+        except (TypeError, ValueError, OverflowError):
+            return fallback
+
+    def _safe_float_locked(
+        self,
+        value: Any,
+        fallback: float = 0.0,
+    ) -> float:
+        try:
+            result = float(value)
+        except (TypeError, ValueError, OverflowError):
+            return fallback
+
+        if result != result or result in (float("inf"), float("-inf")):
+            return fallback
+
+        return result
+
+    def _minimum_plausible_lap_time_ms_locked(self) -> int:
+        track_length_m = self._safe_int_locked(
+            getattr(
+                self._snapshot,
+                "track_length_m",
+                0,
+            ),
+            0,
+        )
+
+        if track_length_m > 0:
+            # Reject physically impossible completed laps. This uses a very
+            # generous 120 m/s ceiling so valid F1 laps are not filtered out.
+            return max(
+                15_000,
+                int(track_length_m / 120.0 * 1000.0),
+            )
+
+        return 15_000
+
+    def _is_plausible_lap_time_ms_locked(
+        self,
+        value: Any,
+    ) -> bool:
+        lap_time_ms = self._safe_int_locked(
+            value,
+            0,
+        )
+
+        if lap_time_ms <= 0:
+            return False
+
+        if lap_time_ms < self._minimum_plausible_lap_time_ms_locked():
+            return False
+
+        if lap_time_ms > 600_000:
+            return False
+
+        return True
+
+    def _normalise_completed_lap_time_ms_locked(
+        self,
+        value: Any,
+        fallback: int,
+    ) -> int:
+        lap_time_ms = self._safe_int_locked(
+            value,
+            fallback,
+        )
+
+        if lap_time_ms <= 0:
+            return 0
+
+        if not self._is_plausible_lap_time_ms_locked(
+            lap_time_ms
+        ):
+            return fallback
+
+        return lap_time_ms
+
+    def _normalise_running_lap_time_ms_locked(
+        self,
+        value: Any,
+        fallback: int,
+    ) -> int:
+        lap_time_ms = self._safe_int_locked(
+            value,
+            fallback,
+        )
+
+        if lap_time_ms < 0:
+            return fallback
+
+        if lap_time_ms > 600_000:
+            return fallback
+
+        return lap_time_ms
+
+    def _normalise_lap_number_locked(
+        self,
+        value: Any,
+        fallback: int,
+    ) -> int:
+        lap_number = self._safe_int_locked(
+            value,
+            fallback,
+        )
+
+        if lap_number < 0:
+            return fallback
+
+        if fallback > 0 and lap_number < fallback:
+            return fallback
+
+        return lap_number
+
     def _apply_lap_data_locked(
         self,
         parsed: ParsedPacket,
@@ -473,113 +596,174 @@ class LiveTelemetryState:
 
         player = parsed.player
 
-        snapshot.last_lap_time_ms = int(
-            player.get(
-                "last_lap_time_ms",
+        raw_last_lap_time_ms = player.get(
+            "last_lap_time_ms",
+            snapshot.last_lap_time_ms,
+        )
+        snapshot.last_lap_time_ms = (
+            self._normalise_completed_lap_time_ms_locked(
+                raw_last_lap_time_ms,
                 snapshot.last_lap_time_ms,
             )
         )
-        snapshot.current_lap_time_ms = int(
-            player.get(
-                "current_lap_time_ms",
+
+        snapshot.current_lap_time_ms = (
+            self._normalise_running_lap_time_ms_locked(
+                player.get(
+                    "current_lap_time_ms",
+                    snapshot.current_lap_time_ms,
+                ),
                 snapshot.current_lap_time_ms,
             )
         )
-        snapshot.lap_distance_m = float(
+
+        snapshot.lap_distance_m = self._safe_float_locked(
             player.get(
                 "lap_distance_m",
                 snapshot.lap_distance_m,
-            )
+            ),
+            snapshot.lap_distance_m,
         )
-        snapshot.total_distance_m = float(
+        snapshot.total_distance_m = self._safe_float_locked(
             player.get(
                 "total_distance_m",
                 snapshot.total_distance_m,
-            )
+            ),
+            snapshot.total_distance_m,
         )
-        snapshot.position = int(
+        snapshot.position = self._safe_int_locked(
             player.get(
                 "position",
                 snapshot.position,
-            )
+            ),
+            snapshot.position,
         )
-        snapshot.grid_position = int(
+        snapshot.grid_position = self._safe_int_locked(
             player.get(
                 "grid_position",
                 snapshot.grid_position,
-            )
+            ),
+            snapshot.grid_position,
         )
-        snapshot.lap_number = int(
+
+        incoming_lap_number = self._normalise_lap_number_locked(
             player.get(
                 "lap_number",
                 snapshot.lap_number,
-            )
+            ),
+            snapshot.lap_number,
         )
-        snapshot.sector = int(
+        lap_advanced = bool(
+            old_lap > 0
+            and incoming_lap_number > old_lap
+        )
+        snapshot.lap_number = incoming_lap_number
+
+        snapshot.sector = self._safe_int_locked(
             player.get(
                 "sector",
                 snapshot.sector,
-            )
+            ),
+            snapshot.sector,
         )
-        snapshot.lap_invalid = bool(
+
+        incoming_lap_invalid = bool(
             player.get(
                 "lap_invalid",
                 snapshot.lap_invalid,
             )
         )
-        snapshot.penalties_s = int(
+        completed_lap_invalid = bool(
+            getattr(
+                self,
+                "_current_lap_invalid_seen",
+                False,
+            )
+        )
+
+        if lap_advanced:
+            self._current_lap_invalid_seen = (
+                incoming_lap_invalid
+            )
+        else:
+            self._current_lap_invalid_seen = (
+                bool(
+                    getattr(
+                        self,
+                        "_current_lap_invalid_seen",
+                        False,
+                    )
+                )
+                or incoming_lap_invalid
+            )
+
+        snapshot.lap_invalid = incoming_lap_invalid
+
+        snapshot.penalties_s = self._safe_int_locked(
             player.get(
                 "penalties_s",
                 snapshot.penalties_s,
-            )
+            ),
+            snapshot.penalties_s,
         )
-        snapshot.warnings = int(
+        snapshot.warnings = self._safe_int_locked(
             player.get(
                 "warnings",
                 snapshot.warnings,
-            )
+            ),
+            snapshot.warnings,
         )
-        snapshot.pit_status = int(
+        snapshot.pit_status = self._safe_int_locked(
             player.get(
                 "pit_status",
                 snapshot.pit_status,
-            )
+            ),
+            snapshot.pit_status,
         )
-        snapshot.pit_stops = int(
+        snapshot.pit_stops = self._safe_int_locked(
             player.get(
                 "pit_stops",
                 snapshot.pit_stops,
-            )
+            ),
+            snapshot.pit_stops,
         )
-        snapshot.driver_status = int(
+        snapshot.driver_status = self._safe_int_locked(
             player.get(
                 "driver_status",
                 snapshot.driver_status,
-            )
+            ),
+            snapshot.driver_status,
         )
-        snapshot.result_status = int(
+        snapshot.result_status = self._safe_int_locked(
             player.get(
                 "result_status",
                 snapshot.result_status,
-            )
+            ),
+            snapshot.result_status,
         )
-        snapshot.delta_to_car_ahead_s = float(
+        snapshot.delta_to_car_ahead_s = self._safe_float_locked(
             player.get(
                 "delta_to_car_ahead_s",
                 snapshot.delta_to_car_ahead_s,
-            )
+            ),
+            snapshot.delta_to_car_ahead_s,
         )
-        snapshot.delta_to_leader_s = float(
+        snapshot.delta_to_leader_s = self._safe_float_locked(
             player.get(
                 "delta_to_leader_s",
                 snapshot.delta_to_leader_s,
-            )
+            ),
+            snapshot.delta_to_leader_s,
         )
 
         valid_cars = [
             car
             for car in parsed.cars
-            if int(car.get("position", 0)) > 0
+            if self._safe_int_locked(
+                car.get("position", 0),
+                0,
+            )
+            > 0
         ]
 
         snapshot.grid_size = len(valid_cars)
@@ -597,12 +781,23 @@ class LiveTelemetryState:
                 - snapshot.position
             )
 
+        completed_lap_time_ok = (
+            self._is_plausible_lap_time_ms_locked(
+                snapshot.last_lap_time_ms
+            )
+        )
+
         if (
-            old_lap > 0
-            and snapshot.lap_number > old_lap
-            and snapshot.last_lap_time_ms > 0
+            lap_advanced
+            and completed_lap_time_ok
+            and old_lap
+            != getattr(
+                self,
+                "_last_completed_lap_number",
+                0,
+            )
         ):
-            valid = not snapshot.lap_invalid
+            valid = not completed_lap_invalid
 
             lap = LapSummary(
                 lap_number=old_lap,
@@ -627,6 +822,7 @@ class LiveTelemetryState:
             ).to_dict()
 
             self._completed_laps.appendleft(lap)
+            self._last_completed_lap_number = old_lap
 
             snapshot.completed_laps = list(
                 self._completed_laps
@@ -789,14 +985,17 @@ class LiveTelemetryState:
                 )
             )
 
-            best_lap = int(
+            best_lap = self._safe_int_locked(
                 player.get(
                     "best_lap_time_ms",
                     0,
-                )
+                ),
+                0,
             )
 
-            if best_lap > 0:
+            if self._is_plausible_lap_time_ms_locked(
+                best_lap
+            ):
                 snapshot.best_lap_time_ms = (
                     best_lap
                 )
