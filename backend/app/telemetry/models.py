@@ -128,6 +128,15 @@ class LiveTelemetrySnapshot:
     penalties_s: int = 0
     pit_status: int = 0
     pit_stops: int = 0
+    stint_number: int = 1
+    stint_lap: int = 0
+    current_stint_compound: str = ""
+    current_stint_start_lap: int = 0
+    current_stint_start_tyre_age_laps: int = 0
+    previous_tyre_compound: str = ""
+    in_pit_lane: bool = False
+    pit_entry_lap: int | None = None
+    pit_exit_lap: int | None = None
     driver_status: int = 0
     result_status: int = 0
     delta_to_car_ahead_s: float = 0.0

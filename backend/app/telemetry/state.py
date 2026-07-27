@@ -65,6 +65,8 @@ class LiveTelemetryState:
         ] | None = None
         self._last_incident_ts = 0.0
         self._last_event_signature: dict[str, float] = {}
+        self._last_pit_status = 0
+        self._last_tyre_compound = ""
         self._current_lap_invalid_seen = False
         self._last_completed_lap_number = 0
 
@@ -86,6 +88,8 @@ class LiveTelemetryState:
         self._last_speed_sample = None
         self._last_incident_ts = 0.0
         self._last_event_signature.clear()
+        self._last_pit_status = 0
+        self._last_tyre_compound = ""
 
     def reset(self) -> None:
         with self._lock:
@@ -302,19 +306,26 @@ class LiveTelemetryState:
                         snapshot.drs_activation_distance_m,
                     )
                 )
-                snapshot.tyre_age_laps = int(
+                tyre_age_laps = self._safe_int_locked(
                     player.get(
                         "tyre_age_laps",
                         snapshot.tyre_age_laps,
-                    )
+                    ),
+                    snapshot.tyre_age_laps,
                 )
-                snapshot.tyre_compound = compound_name(
-                    int(
+                tyre_compound = compound_name(
+                    self._safe_int_locked(
                         player.get(
                             "visual_tyre_compound",
                             0,
-                        )
+                        ),
+                        0,
                     )
+                )
+                self._set_tyre_stint_locked(
+                    tyre_compound,
+                    tyre_age_laps,
+                    "car_status",
                 )
                 snapshot.front_brake_bias = int(
                     player.get(
@@ -579,6 +590,295 @@ class LiveTelemetryState:
 
         return lap_number
 
+    def _is_known_compound_locked(
+        self,
+        compound: Any,
+    ) -> bool:
+        value = str(compound or "").strip().lower()
+
+        if not value:
+            return False
+
+        return value not in {
+            "0",
+            "none",
+            "unknown",
+            "unknown/none",
+            "unknown tyre",
+        }
+
+    def _set_pit_stop_count_locked(
+        self,
+        value: Any,
+        source: str,
+    ) -> None:
+        snapshot = self._snapshot
+        pit_stops = self._safe_int_locked(
+            value,
+            snapshot.pit_stops,
+        )
+
+        if pit_stops < 0:
+            return
+
+        if pit_stops < snapshot.pit_stops:
+            return
+
+        old_pit_stops = snapshot.pit_stops
+        snapshot.pit_stops = pit_stops
+
+        if pit_stops > old_pit_stops:
+            self._add_event_locked(
+                "pit_stop_completed",
+                "info",
+                "Pit stop recorded",
+                (
+                    f"Pit stop count increased from "
+                    f"{old_pit_stops} to {pit_stops}."
+                ),
+                {
+                    "old_pit_stops": old_pit_stops,
+                    "pit_stops": pit_stops,
+                    "source": source,
+                },
+                signature=(
+                    f"pit_stops:{pit_stops}:"
+                    f"{snapshot.lap_number}"
+                ),
+                dedupe_seconds=5.0,
+            )
+
+    def _set_pit_status_locked(
+        self,
+        value: Any,
+        source: str,
+    ) -> None:
+        snapshot = self._snapshot
+        old_status = snapshot.pit_status
+        new_status = self._safe_int_locked(
+            value,
+            old_status,
+        )
+
+        if new_status < 0:
+            new_status = old_status
+
+        snapshot.pit_status = new_status
+
+        was_in_pit_lane = bool(
+            getattr(
+                snapshot,
+                "in_pit_lane",
+                False,
+            )
+        )
+        now_in_pit_lane = new_status > 0
+
+        if now_in_pit_lane and not was_in_pit_lane:
+            snapshot.in_pit_lane = True
+            snapshot.pit_entry_lap = (
+                snapshot.lap_number
+                if snapshot.lap_number > 0
+                else None
+            )
+
+            self._add_event_locked(
+                "pit_entry",
+                "info",
+                "Entered pit lane",
+                (
+                    "Pit lane entry detected"
+                    + (
+                        f" on lap {snapshot.pit_entry_lap}."
+                        if snapshot.pit_entry_lap is not None
+                        else "."
+                    )
+                ),
+                {
+                    "pit_status": new_status,
+                    "lap_number": snapshot.lap_number,
+                    "source": source,
+                },
+                signature=(
+                    f"pit_entry:{snapshot.lap_number}:"
+                    f"{snapshot.pit_stops}"
+                ),
+                dedupe_seconds=5.0,
+            )
+
+        elif (
+            was_in_pit_lane
+            and not now_in_pit_lane
+        ):
+            snapshot.in_pit_lane = False
+            snapshot.pit_exit_lap = (
+                snapshot.lap_number
+                if snapshot.lap_number > 0
+                else None
+            )
+
+            self._add_event_locked(
+                "pit_exit",
+                "info",
+                "Exited pit lane",
+                (
+                    "Pit lane exit detected"
+                    + (
+                        f" on lap {snapshot.pit_exit_lap}."
+                        if snapshot.pit_exit_lap is not None
+                        else "."
+                    )
+                ),
+                {
+                    "old_pit_status": old_status,
+                    "pit_status": new_status,
+                    "lap_number": snapshot.lap_number,
+                    "source": source,
+                },
+                signature=(
+                    f"pit_exit:{snapshot.lap_number}:"
+                    f"{snapshot.pit_stops}"
+                ),
+                dedupe_seconds=5.0,
+            )
+
+        else:
+            snapshot.in_pit_lane = now_in_pit_lane
+
+    def _update_stint_metrics_locked(self) -> None:
+        snapshot = self._snapshot
+
+        if snapshot.current_stint_start_lap <= 0:
+            snapshot.current_stint_start_lap = max(
+                1,
+                snapshot.lap_number,
+            )
+
+        if snapshot.current_stint_start_tyre_age_laps < 0:
+            snapshot.current_stint_start_tyre_age_laps = 0
+
+        snapshot.stint_lap = max(
+            0,
+            snapshot.tyre_age_laps
+            - snapshot.current_stint_start_tyre_age_laps,
+        )
+
+        if not snapshot.current_stint_compound:
+            snapshot.current_stint_compound = snapshot.tyre_compound
+
+    def _set_tyre_stint_locked(
+        self,
+        compound: Any,
+        tyre_age_laps: Any,
+        source: str,
+    ) -> None:
+        snapshot = self._snapshot
+        old_compound = str(
+            snapshot.tyre_compound or ""
+        ).strip()
+        new_compound = str(
+            compound or old_compound
+        ).strip()
+        old_tyre_age = snapshot.tyre_age_laps
+
+        tyre_age = self._safe_int_locked(
+            tyre_age_laps,
+            snapshot.tyre_age_laps,
+        )
+
+        if tyre_age < 0:
+            tyre_age = snapshot.tyre_age_laps
+
+        snapshot.tyre_age_laps = tyre_age
+
+        if not self._is_known_compound_locked(
+            new_compound
+        ):
+            self._update_stint_metrics_locked()
+            return
+
+        if not self._is_known_compound_locked(
+            old_compound
+        ):
+            snapshot.tyre_compound = new_compound
+            snapshot.current_stint_compound = new_compound
+            snapshot.current_stint_start_lap = max(
+                1,
+                snapshot.lap_number,
+            )
+            snapshot.current_stint_start_tyre_age_laps = tyre_age
+            self._update_stint_metrics_locked()
+            return
+
+        compound_changed = new_compound != old_compound
+        tyre_age_reset = bool(
+            old_tyre_age > 0
+            and tyre_age < old_tyre_age
+        )
+        new_stint_detected = (
+            compound_changed
+            or tyre_age_reset
+        )
+
+        if new_stint_detected:
+            snapshot.previous_tyre_compound = old_compound
+            snapshot.tyre_compound = new_compound
+            snapshot.current_stint_compound = new_compound
+            snapshot.current_stint_start_lap = max(
+                1,
+                snapshot.lap_number,
+            )
+            snapshot.current_stint_start_tyre_age_laps = tyre_age
+            snapshot.stint_number = max(
+                1,
+                snapshot.stint_number + 1,
+            )
+
+            reason = (
+                "compound_change"
+                if compound_changed
+                else "tyre_age_reset"
+            )
+
+            description = (
+                f"Tyre compound changed from "
+                f"{old_compound} to {new_compound}."
+                if compound_changed
+                else (
+                    f"Fresh {new_compound} tyre stint detected "
+                    "from tyre age reset."
+                )
+            )
+
+            self._add_event_locked(
+                "stint_started",
+                "info",
+                "New tyre stint",
+                description,
+                {
+                    "previous_compound": old_compound,
+                    "compound": new_compound,
+                    "stint_number": snapshot.stint_number,
+                    "lap_number": snapshot.lap_number,
+                    "old_tyre_age_laps": old_tyre_age,
+                    "tyre_age_laps": tyre_age,
+                    "reason": reason,
+                    "source": source,
+                },
+                signature=(
+                    f"stint:{snapshot.stint_number}:"
+                    f"{snapshot.lap_number}:{new_compound}:"
+                    f"{reason}"
+                ),
+                dedupe_seconds=5.0,
+            )
+
+        else:
+            snapshot.tyre_compound = new_compound
+            snapshot.current_stint_compound = new_compound
+
+        self._update_stint_metrics_locked()
+
     def _apply_lap_data_locked(
         self,
         parsed: ParsedPacket,
@@ -713,20 +1013,22 @@ class LiveTelemetryState:
             ),
             snapshot.warnings,
         )
-        snapshot.pit_status = self._safe_int_locked(
+
+        self._set_pit_status_locked(
             player.get(
                 "pit_status",
                 snapshot.pit_status,
             ),
-            snapshot.pit_status,
+            "lap_data",
         )
-        snapshot.pit_stops = self._safe_int_locked(
+        self._set_pit_stop_count_locked(
             player.get(
                 "pit_stops",
                 snapshot.pit_stops,
             ),
-            snapshot.pit_stops,
+            "lap_data",
         )
+
         snapshot.driver_status = self._safe_int_locked(
             player.get(
                 "driver_status",
@@ -780,6 +1082,8 @@ class LiveTelemetryState:
                 snapshot.grid_position
                 - snapshot.position
             )
+
+        self._update_stint_metrics_locked()
 
         completed_lap_time_ok = (
             self._is_plausible_lap_time_ms_locked(
@@ -972,11 +1276,12 @@ class LiveTelemetryState:
                     snapshot.result_status,
                 )
             )
-            snapshot.pit_stops = int(
+            self._set_pit_stop_count_locked(
                 player.get(
                     "num_pit_stops",
                     snapshot.pit_stops,
-                )
+                ),
+                "final_classification",
             )
             snapshot.penalties_s = int(
                 player.get(
