@@ -83,6 +83,15 @@ class LiveTelemetrySnapshot:
     connected: bool = False
     packet_count: int = 0
     last_packet_age_s: float | None = None
+
+    last_packet_accepted: bool = True
+    last_packet_rejection_reason: str | None = None
+    telemetry_status: str = "waiting"
+    session_generation: int = 0
+    telemetry_diagnostics: dict[str, Any] = field(default_factory=dict)
+    field_freshness: dict[str, dict[str, Any]] = field(default_factory=dict)
+    stale_fields: list[str] = field(default_factory=list)
+    stale_groups: list[str] = field(default_factory=list)
     packet_format: int | None = None
     game_year: int | None = None
     session_uid: int | None = None
@@ -119,6 +128,15 @@ class LiveTelemetrySnapshot:
     penalties_s: int = 0
     pit_status: int = 0
     pit_stops: int = 0
+    stint_number: int = 1
+    stint_lap: int = 0
+    current_stint_compound: str = ""
+    current_stint_start_lap: int = 0
+    current_stint_start_tyre_age_laps: int = 0
+    previous_tyre_compound: str = ""
+    in_pit_lane: bool = False
+    pit_entry_lap: int | None = None
+    pit_exit_lap: int | None = None
     driver_status: int = 0
     result_status: int = 0
     delta_to_car_ahead_s: float = 0.0

@@ -46,3 +46,5 @@ data/sessions/
 # TypeScript build cache
 frontend/tsconfig.tsbuildinfo
 *.tsbuildinfo
+
+recordings/
