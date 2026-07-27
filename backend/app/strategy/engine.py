@@ -90,6 +90,12 @@ class LiveStrategicEngineer:
         quality = self._data_quality(snapshot, ahead, behind)
 
         reasons: list[str] = []
+        reasons.extend(
+            self._strategy_safety_reason_codes(
+                snapshot,
+                tyres,
+            )
+        )
         reasons.extend(box.reason_codes)
         if ahead and ahead.in_drs_range:
             reasons.append("car_ahead_in_drs")
@@ -97,6 +103,12 @@ class LiveStrategicEngineer:
             reasons.append("car_behind_in_drs")
         if energy.action == EnergyAction.HARVEST:
             reasons.append("battery_recovery")
+        if energy.action == EnergyAction.UNKNOWN:
+            reasons.extend(
+                self._energy_safety_issues(
+                    snapshot
+                )
+            )
 
         decision = LiveRaceDecision(
             generated_at=time(),
@@ -211,7 +223,243 @@ class LiveStrategicEngineer:
     # Analysis helpers
     # ------------------------------------------------------------------
 
+    def _stale_groups(self, snapshot: Any) -> set[str]:
+        groups: set[str] = set()
+
+        for value in getattr(
+            snapshot,
+            "stale_groups",
+            [],
+        ) or []:
+            groups.add(str(value))
+
+        diagnostics = getattr(
+            snapshot,
+            "telemetry_diagnostics",
+            {},
+        ) or {}
+
+        if isinstance(diagnostics, dict):
+            for key in (
+                "stale_groups",
+                "stale_critical_groups",
+            ):
+                for value in diagnostics.get(key, []) or []:
+                    groups.add(str(value))
+
+        return groups
+
+    def _group_is_stale(
+        self,
+        snapshot: Any,
+        group: str,
+    ) -> bool:
+        return group in self._stale_groups(snapshot)
+
+    def _packet_stream_stale(self, snapshot: Any) -> bool:
+        status = str(
+            getattr(
+                snapshot,
+                "telemetry_status",
+                "",
+            )
+            or ""
+        ).strip().lower()
+
+        if status == "stale":
+            return True
+
+        age = getattr(
+            snapshot,
+            "last_packet_age_s",
+            None,
+        )
+
+        if age is None:
+            return False
+
+        try:
+            return float(age) > 5.0
+        except (TypeError, ValueError):
+            return False
+
+    def _strategy_stale_groups(
+        self,
+        snapshot: Any,
+    ) -> set[str]:
+        return self._stale_groups(snapshot).intersection(
+            {
+                "lap_data",
+                "car_status",
+                "car_damage",
+            }
+        )
+
+    def _tyre_state_available(
+        self,
+        snapshot: Any,
+    ) -> bool:
+        compound = str(
+            getattr(
+                snapshot,
+                "tyre_compound",
+                "",
+            )
+            or ""
+        ).strip().lower()
+
+        known_compound = bool(
+            compound
+            and compound not in {
+                "unknown",
+                "none",
+                "0",
+                "id-0",
+            }
+        )
+
+        wear = self._numbers(
+            getattr(
+                snapshot,
+                "tyre_wear_pct",
+                [],
+            )
+        )
+        temps = self._numbers(
+            getattr(
+                snapshot,
+                "tyre_surface_temps_c",
+                [],
+            )
+        )
+
+        return bool(
+            known_compound
+            or self._int(snapshot, "tyre_age_laps") > 0
+            or any(value > 0 for value in wear)
+            or any(value > 0 for value in temps)
+        )
+
+    def _strategy_safety_reason_codes(
+        self,
+        snapshot: Any,
+        tyres: TyreProjection,
+    ) -> list[str]:
+        reasons: list[str] = []
+
+        if self._packet_stream_stale(snapshot):
+            reasons.append("stale_packet_stream")
+
+        for group in sorted(
+            self._strategy_stale_groups(snapshot)
+        ):
+            reasons.append(f"stale_{group}")
+
+        if (
+            self._positive_int(snapshot, "position") is None
+            or self._int(snapshot, "lap_number") <= 0
+        ):
+            reasons.append("missing_race_context")
+
+        if not self._tyre_state_available(snapshot):
+            reasons.append("missing_tyre_state")
+
+        if tyres.confidence < 0.25:
+            reasons.append("low_tyre_projection_confidence")
+
+        return list(dict.fromkeys(reasons))
+
+    def _box_safety_issues(
+        self,
+        snapshot: Any,
+        tyres: TyreProjection,
+    ) -> list[str]:
+        issues = self._strategy_safety_reason_codes(
+            snapshot,
+            tyres,
+        )
+
+        return [
+            issue
+            for issue in issues
+            if issue
+            in {
+                "stale_packet_stream",
+                "stale_lap_data",
+                "stale_car_status",
+                "stale_car_damage",
+                "missing_race_context",
+                "missing_tyre_state",
+            }
+        ]
+
+    def _energy_safety_issues(
+        self,
+        snapshot: Any,
+    ) -> list[str]:
+        issues: list[str] = []
+
+        if self._packet_stream_stale(snapshot):
+            issues.append("stale_packet_stream")
+
+        if self._group_is_stale(
+            snapshot,
+            "car_status",
+        ):
+            issues.append("stale_car_status")
+
+        ers_percent = self._float(
+            snapshot,
+            "ers_percent",
+        )
+        ers_store = self._float(
+            snapshot,
+            "ers_store_j",
+        )
+
+        if ers_percent <= 0 and ers_store <= 0:
+            issues.append("missing_ers_state")
+
+        return list(dict.fromkeys(issues))
+
+    def _safe_box_decision(
+        self,
+        issues: list[str],
+    ) -> BoxDecision:
+        return BoxDecision(
+            action=BoxAction.UNKNOWN,
+            confidence=0.20,
+            summary=(
+                "Box call withheld until fresh lap, tyre, "
+                "pit-status, and damage telemetry is available."
+            ),
+            reason_codes=list(dict.fromkeys(issues)),
+        )
+
+    def _safe_energy_plan(
+        self,
+        issues: list[str],
+    ) -> EnergyPlan:
+        return EnergyPlan(
+            EnergyAction.UNKNOWN,
+            0.0,
+            0.0,
+            0.0,
+            "next long straight",
+            (
+                "ERS deployment call withheld until fresh "
+                "car-status telemetry is available."
+            ),
+            0.20,
+        )
+
     def _record_sample(self, snapshot: Any) -> None:
+        if (
+            self._packet_stream_stale(snapshot)
+            or self._strategy_stale_groups(snapshot)
+        ):
+            return
+
         session_time = self._float(snapshot, "session_time")
         if self._samples and session_time <= self._samples[-1]["session_time"] + 0.20:
             return
@@ -366,6 +614,15 @@ class LiveStrategicEngineer:
                 confidence=0.98,
                 summary="Continue the current box sequence.",
                 reason_codes=["already_boxing"],
+            )
+
+        safety_issues = self._box_safety_issues(
+            snapshot,
+            tyres,
+        )
+        if safety_issues:
+            return self._safe_box_decision(
+                safety_issues
             )
 
         pit_loss = self._setting("strategy_default_pit_loss_s", 22.0)
@@ -543,6 +800,22 @@ class LiveStrategicEngineer:
         ahead: NearbyCarAssessment | None,
         behind: NearbyCarAssessment | None,
     ) -> BattleState:
+        if (
+            self._packet_stream_stale(snapshot)
+            or self._group_is_stale(snapshot, "lap_data")
+        ):
+            return BattleState.UNKNOWN
+
+        if (
+            box.action == BoxAction.UNKNOWN
+            and any(
+                reason.startswith("stale_")
+                or reason.startswith("missing_")
+                for reason in box.reason_codes
+            )
+        ):
+            return BattleState.UNKNOWN
+
         if box.action == BoxAction.BOX_NOW and box.confidence >= 0.9:
             return BattleState.CRITICAL
         if behind and behind.gap_s is not None and behind.gap_s <= self._setting("strategy_defend_gap_s", 1.2):
@@ -568,6 +841,14 @@ class LiveStrategicEngineer:
         ahead: NearbyCarAssessment | None,
         behind: NearbyCarAssessment | None,
     ) -> EnergyPlan:
+        energy_issues = self._energy_safety_issues(
+            snapshot
+        )
+        if energy_issues:
+            return self._safe_energy_plan(
+                energy_issues
+            )
+
         battery = max(0.0, min(100.0, self._float(snapshot, "ers_percent")))
         laps_remaining = self._laps_remaining(snapshot)
         zone = self._deployment_zone(snapshot)
@@ -700,6 +981,19 @@ class LiveStrategicEngineer:
         return f"the long straight around {percent}% of the lap"
 
     def _coaching_plan(self, snapshot: Any, battle: BattleState, tyres: TyreProjection) -> CoachingPlan:
+        if (
+            self._packet_stream_stale(snapshot)
+            or self._group_is_stale(snapshot, "car_telemetry")
+        ):
+            return CoachingPlan(
+                "collect_data",
+                (
+                    "Holding coaching call until fresh car telemetry "
+                    "is available."
+                ),
+                confidence=0.20,
+            )
+
         history = list(getattr(snapshot, "history", []) or [])[-240:]
         if len(history) < 20:
             return CoachingPlan("collect_data", "Build a clean reference lap while I collect more data.", confidence=0.25)
@@ -808,12 +1102,22 @@ class LiveStrategicEngineer:
             self._int(snapshot, "total_laps") > 0,
             self._float(snapshot, "ers_percent") > 0,
             any(self._numbers(getattr(snapshot, "tyre_wear_pct", []))),
+            self._tyre_state_available(snapshot),
             ahead is not None,
             behind is not None,
             bool(getattr(snapshot, "classification", [])),
             len(getattr(snapshot, "history", []) or []) >= 20,
+            not self._packet_stream_stale(snapshot),
+            not self._strategy_stale_groups(snapshot),
         ]
-        return round(sum(1 for item in checks if item) / len(checks), 2)
+        score = sum(1 for item in checks if item) / len(checks)
+
+        if self._packet_stream_stale(snapshot):
+            score = min(score, 0.25)
+        elif self._strategy_stale_groups(snapshot):
+            score = min(score, 0.45)
+
+        return round(score, 2)
 
     def _gap_behind(self, snapshot: Any) -> float | None:
         car = getattr(snapshot, "car_behind", None)

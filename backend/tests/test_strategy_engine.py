@@ -32,6 +32,10 @@ def snapshot(**overrides):
         "connected": True,
         "session_uid": 100,
         "session_time": 120.0,
+        "telemetry_status": "live",
+        "telemetry_diagnostics": {},
+        "stale_groups": [],
+        "last_packet_age_s": 0.0,
         "position": 5,
         "grid_size": 20,
         "lap_number": 10,
@@ -151,6 +155,61 @@ class LiveStrategicEngineerTests(unittest.TestCase):
         result = self.engine.evaluate(snapshot())
         self.assertIsNotNone(result.box.expected_rejoin_position)
         self.assertGreaterEqual(result.box.expected_rejoin_position or 0, 5)
+
+    def test_stale_lap_data_blocks_box_now_call(self) -> None:
+        result = self.engine.evaluate(
+            snapshot(
+                telemetry_status="stale",
+                stale_groups=["lap_data"],
+                last_packet_age_s=12.0,
+                tyre_wear_pct=[90.0, 88.0, 87.0, 86.0],
+            )
+        )
+
+        self.assertEqual(result.box.action, BoxAction.UNKNOWN)
+        self.assertIn("stale_lap_data", result.box.reason_codes)
+        self.assertIn("stale_packet_stream", result.reason_codes)
+        self.assertEqual(result.battle_state, BattleState.UNKNOWN)
+        self.assertLess(result.data_quality, 0.30)
+
+    def test_car_telemetry_stale_does_not_block_tyre_safety_box_call(self) -> None:
+        result = self.engine.evaluate(
+            snapshot(
+                telemetry_status="degraded",
+                stale_groups=["car_telemetry"],
+                tyre_wear_pct=[85.0, 82.0, 80.0, 81.0],
+            )
+        )
+
+        self.assertEqual(result.box.action, BoxAction.BOX_NOW)
+        self.assertIn("critical_tyre_wear", result.box.reason_codes)
+
+    def test_stale_car_status_withholds_ers_plan(self) -> None:
+        result = self.engine.evaluate(
+            snapshot(
+                telemetry_status="degraded",
+                stale_groups=["car_status"],
+                ers_percent=92.0,
+            )
+        )
+
+        self.assertEqual(result.energy.action, EnergyAction.UNKNOWN)
+        self.assertIn("stale_car_status", result.reason_codes)
+        self.assertLessEqual(result.data_quality, 0.45)
+
+    def test_missing_tyre_state_blocks_grounded_box_call(self) -> None:
+        result = self.engine.evaluate(
+            snapshot(
+                tyre_compound="UNKNOWN",
+                tyre_age_laps=0,
+                tyre_wear_pct=[0.0, 0.0, 0.0, 0.0],
+                tyre_surface_temps_c=[0.0, 0.0, 0.0, 0.0],
+            )
+        )
+
+        self.assertEqual(result.box.action, BoxAction.UNKNOWN)
+        self.assertIn("missing_tyre_state", result.box.reason_codes)
+
 
 
 if __name__ == "__main__":
