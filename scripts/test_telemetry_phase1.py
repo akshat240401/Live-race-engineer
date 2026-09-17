@@ -18,7 +18,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--url",
-        default="http://localhost:8000/api/telemetry/diagnostics",
+        default="http://localhost:8080/api/telemetry/diagnostics",
     )
     parser.add_argument("--interval", type=float, default=1.0)
     parser.add_argument("--count", type=int, default=30)

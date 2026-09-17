@@ -11,8 +11,8 @@ import { CompactTyreStatus } from "../components/CompactTyreStatus";
 import { fixed, msToLap } from "../lib/format";
 import { ControlState, TelemetrySnapshot } from "../types/telemetry";
 
-const API = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000/ws/live";
+const API = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8080/ws/live";
 const STALE_OVERRIDE_MS = Number.parseFloat(
   process.env.NEXT_PUBLIC_TELEMETRY_STALE_MS || "",
 );

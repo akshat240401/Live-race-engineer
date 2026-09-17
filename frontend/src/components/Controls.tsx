@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ControlState } from "../types/telemetry";
 
-const API = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
+const API = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
 
 type ControlsProps = {
   voiceEnabled: boolean;

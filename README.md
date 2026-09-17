@@ -13,8 +13,9 @@ The goal of this project is simple: turn raw racing telemetry into useful decisi
 Most racing games expose a lot of telemetry, but raw telemetry alone does not tell the driver what to improve. This project bridges that gap by combining:
 
 * Real-time UDP telemetry processing
-* Python/FastAPI backend services
-* WebSocket-based live state streaming
+* TypeScript/Node.js public backend for REST APIs and WebSocket streaming
+* Python/FastAPI telemetry and race-intelligence engine
+* WebSocket-based live state streaming at up to 30 Hz
 * Rule-based race-engineer logic
 * Voice feedback with cooldowns
 * A compact race-mode dashboard built with Next.js
@@ -29,12 +30,13 @@ The live system is designed to be fast and deterministic. The race engineer does
 
 ### Real-time telemetry backend
 
-* Listens to EA SPORTS F1 UDP telemetry on port `20777`
+* TypeScript/Node.js gateway exposes the public REST API and `/ws/live` WebSocket used by the Next.js dashboard
+* Node backend consumes normalized live telemetry from the Python engine at up to 30 Hz and fans it out to connected dashboard clients
+* Python/FastAPI engine listens to EA SPORTS F1 UDP telemetry on port `20777`
 * Parses core F1 25 / 2026 Season Pack packet types used by the dashboard
-* Maintains live session state
+* Maintains live session state and race-intelligence services
 * Tracks lap timing, speed, throttle, brake, steering, tyres, ERS, fuel, damage, and car status
-* Streams live state to the frontend over WebSockets
-* Includes a built-in UDP simulator for testing without launching the game
+* Includes a built-in UDP simulator and replay tooling for testing without launching the game
 
 ### Race engineer coaching
 
@@ -105,12 +107,14 @@ A radio check endpoint is included so voice can be tested before starting a race
 
 ### Backend
 
-* Python
-* FastAPI
+* TypeScript
+* Node.js
+* REST APIs
 * WebSockets
+* Python / FastAPI telemetry engine
 * UDP sockets
 * Pydantic-style telemetry models
-* Rule-based coaching engine
+* Rule-based coaching and strategy engines
 * Text-to-speech voice engineer
 
 ### Frontend
@@ -129,10 +133,40 @@ A radio check endpoint is included so voice can be tested before starting a race
 
 ---
 
+## Runtime Architecture
+
+```text
+EA SPORTS F1 UDP (up to 30 Hz)
+        |
+        v
+Python / FastAPI telemetry + strategy engine (:8000)
+        | normalized WebSocket stream (?hz=30)
+        v
+TypeScript / Node.js API + WebSocket backend (:8080)
+        |
+        +--> REST /api/*
+        +--> WebSocket /ws/live
+        |
+        v
+Next.js / React / TypeScript dashboard (:3000)
+```
+
+The Node.js service is the public backend used by the frontend. It caches the latest normalized race state, exposes REST endpoints, proxies control/analysis operations to the Python telemetry engine, and broadcasts live telemetry to browser clients over WebSockets.
+
+---
+
 ## Folder Structure
 
 ```text
 Live-race-engineer/
+  node-backend/
+    src/
+      config.ts
+      engineClient.ts
+      server.ts
+    package.json
+    tsconfig.json
+
   backend/
     app/
       api/
@@ -182,7 +216,9 @@ Live-race-engineer/
   scripts/
     simulate_udp.py
     start_backend.ps1
+    start_node_backend.ps1
     start_frontend.ps1
+    start_stack.ps1
     start_simulator.ps1
 
   docs/
@@ -204,16 +240,17 @@ Real gameplay requires F1 UDP telemetry to be enabled in-game and may require al
 
 ## Requirements
 
-### Backend
+### Backend / telemetry engine
 
 * Python 3.12 recommended
+* Node.js 18+ and npm for the TypeScript API/WebSocket backend
 * Windows, macOS, or Linux
 * F1 25 / F1 25 2026 Season Pack for live gameplay
 * UDP telemetry enabled in the game
 
 ### Frontend
 
-* Node.js
+* Node.js 18+
 * npm
 * Modern browser
 
@@ -261,7 +298,7 @@ git clone https://github.com/akshat240401/Live-race-engineer.git
 cd Live-race-engineer
 ```
 
-### 2. Start the backend
+### 2. Start the Python telemetry engine
 
 Open Terminal 1:
 
@@ -276,15 +313,30 @@ Copy-Item .env.example .env -Force
 python -m uvicorn app.main:app --reload --port 8000
 ```
 
-Backend should run at:
+The Python telemetry/strategy engine runs internally at `http://localhost:8000`.
 
-```text
-http://localhost:8000
-```
-
-### 3. Start the frontend
+### 3. Start the TypeScript / Node.js backend
 
 Open Terminal 2:
+
+```powershell
+cd node-backend
+npm install
+Copy-Item .env.example .env -Force
+npm run dev
+```
+
+The public REST/WebSocket backend runs at:
+
+```text
+http://localhost:8080
+```
+
+It consumes the normalized Python telemetry stream at 30 Hz and exposes the API and WebSocket used by the dashboard.
+
+### 4. Start the frontend
+
+Open Terminal 3:
 
 ```powershell
 cd frontend
@@ -298,6 +350,8 @@ Frontend should run at:
 ```text
 http://localhost:3000
 ```
+
+Alternatively, after dependencies are installed, `scripts\start_stack.ps1` launches all three services in separate PowerShell windows.
 
 ---
 
@@ -351,7 +405,7 @@ WS   /ws/live
 ### Health check
 
 ```powershell
-Invoke-RestMethod "http://localhost:8000/api/health" | ConvertTo-Json
+Invoke-RestMethod "http://localhost:8080/api/health" | ConvertTo-Json
 ```
 
 Expected fields include:
@@ -394,13 +448,13 @@ engine.runAndWait()
 To enable voice through the backend:
 
 ```powershell
-Invoke-RestMethod -Method Post "http://localhost:8000/api/voice?enabled=true"
+Invoke-RestMethod -Method Post "http://localhost:8080/api/voice?enabled=true"
 ```
 
 To test voice through the app:
 
 ```powershell
-Invoke-RestMethod -Method Post "http://localhost:8000/api/voice/test"
+Invoke-RestMethod -Method Post "http://localhost:8080/api/voice/test"
 ```
 
 ---
@@ -554,7 +608,7 @@ git push
 Check backend health:
 
 ```powershell
-Invoke-RestMethod "http://localhost:8000/api/health" | ConvertTo-Json
+Invoke-RestMethod "http://localhost:8080/api/health" | ConvertTo-Json
 ```
 
 Make sure:

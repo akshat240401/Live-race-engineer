@@ -28,7 +28,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Exercise the Live Race Engineer hands-free radio API."
     )
-    parser.add_argument("--base-url", default="http://localhost:8000")
+    parser.add_argument("--base-url", default="http://localhost:8080")
     parser.add_argument("--speak", action="store_true")
     parser.add_argument(
         "--calibrate",
