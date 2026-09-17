@@ -153,7 +153,7 @@ function isObject(value: unknown): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-server.listen(config.port, () => {
+server.listen(config.port, "127.0.0.1", () => {
   console.log(`[node-backend] listening on http://localhost:${config.port}`);
   console.log(`[node-backend] proxying REST to ${config.engineHttpBase}`);
   console.log(`[node-backend] consuming telemetry from ${config.engineWsUrl}`);

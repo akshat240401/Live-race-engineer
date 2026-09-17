@@ -1,3 +1,5 @@
+import "dotenv/config";
+
 export type GatewayConfig = {
   port: number;
   engineHttpBase: string;
