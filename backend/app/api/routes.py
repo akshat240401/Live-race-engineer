@@ -327,11 +327,22 @@ def telemetry_diagnostics(request: Request):
 async def websocket_live(websocket: WebSocket):
     await websocket.accept()
     engineer = websocket.app.state.runtime
+
+    # Internal consumers such as the Node.js gateway can request the telemetry
+    # stream at the game's configured 30 Hz rate. Existing clients that do not
+    # specify a rate retain the original 10 Hz behavior.
+    try:
+        requested_hz = float(websocket.query_params.get("hz", "10"))
+    except (TypeError, ValueError):
+        requested_hz = 10.0
+    stream_hz = min(60.0, max(1.0, requested_hz))
+    interval_s = 1.0 / stream_hz
+
     try:
         while True:
             snapshot = engineer.state.snapshot().to_dict()
             await websocket.send_json(snapshot)
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(interval_s)
     except WebSocketDisconnect:
         return
     except RuntimeError:

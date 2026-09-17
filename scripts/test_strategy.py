@@ -5,7 +5,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 
-BASE = "http://localhost:8000"
+BASE = "http://localhost:8080"
 
 
 def get_json(path: str, method: str = "GET") -> dict:
